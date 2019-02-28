@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//--------------------------------------------------------
 class Seg{
 	public:
 		double x1,x2;
@@ -65,6 +66,8 @@ void BinPatch::set_xlim(double xl,double xr){
 BinPatch *new_Patch(double xl, double xr){
 	BinPatch *bp=(BinPatch *)malloc(sizeof(BinPatch));
 	bp->set_xlim(xl,xr);
+	bp->chld[0]=NULL;
+	bp->chld[1]=NULL;
 	return(bp);
 };
 
@@ -103,53 +106,80 @@ void translate_crs(int icrs){
 	if(icrs==3) puts("A ^ B != phi");
 };
 
-int down(BinPatch bp, Seg G){
+int down(BinPatch *bp, Seg G,int *count){
 	double xl,xr,xm;
 
-	int lev=bp.lev;
+	int lev=bp->lev;
 
 	if(lev > 4){
-		bp.print();
+		bp->print();
+		(*count)++;
 		return(lev);
 	}
 
-	int icrs=set_crs(G, bp.A);
+	int icrs=set_crs(G, bp->A);
 	//printf("Relation of G to A is %d\n",icrs);
 	//translate_crs(icrs);
-
 	if(icrs>1){
-		xl=bp.A.x1;
-		xr=bp.A.x2;
+		xl=bp->A.x1;
+		xr=bp->A.x2;
 		xm=(xl+xr)*0.5;
-		bp.chld[0]=new_Patch(xl,xm);
-		bp.chld[1]=new_Patch(xm,xr);
-		bp.chld[0]->par=&bp;
-		bp.chld[1]->par=&bp;
-		bp.chld[0]->lev=lev+1;
-		bp.chld[1]->lev=lev+1;
-		//puts("child patch:");
-		//bp.chld[0]->print();
-		//bp.chld[1]->print();
-
-		down( *(bp.chld[0]), G);
-		down( *(bp.chld[1]), G);
-	}
-	bp.print();
-	return(bp.lev);
+		bp->chld[0]=new_Patch(xl,xm);
+		bp->chld[1]=new_Patch(xm,xr);
+		bp->chld[0]->par=bp;
+		bp->chld[1]->par=bp;
+		bp->chld[0]->lev=lev+1;
+		bp->chld[1]->lev=lev+1;
+		down( bp->chld[0], G, count);
+		down( bp->chld[1], G, count);
+	}else{
+		(*count)++;
+		bp->print();
+	};
+	return(bp->lev);
 };
-
+//--------------------------------------------------------
+void leaves(BinPatch *bp,int *count,BinPatch *bps){
+	if(bp->chld[0]==NULL){
+		bp->print();
+		printf("idx=%d\n",*count);
+		bps[*count]=(*bp);
+		(*count)++;
+	}else{
+		leaves(bp->chld[0],count,bps);
+		leaves(bp->chld[1],count,bps);
+	};
+};
 //--------------------------------------------------------
 int main(){
+	int count;
+
 	Seg G(0.3,0.7);
 
-	BinPatch bp;
-	bp.A.set_xlim(0.0,1.0);
+	BinPatch bp0;	// root node
+	bp0.A.set_xlim(0.0,1.0);
 	//bp.print();
-	bp.lev=0;
+	bp0.lev=0;
 
 	printf("# G=");
 	G.print();
-	down(bp,G);
+	count=0;
+	down(&bp0,G,&count);
+	printf("count=%d\n",count);
+
+	puts("-----------------------------------");
+	//count=0;
+
+	BinPatch *bps=(BinPatch *)malloc(sizeof(BinPatch)*count);
+	int idx;
+	leaves(&bp0,&idx,bps);
+
+	puts("-----------------------------------");
+	for(idx=0;idx<count;idx++){
+		printf("Lev=%d, ",bps[idx].lev);
+		bps[idx].print();
+	};
+
 
 	return(0);
 };
