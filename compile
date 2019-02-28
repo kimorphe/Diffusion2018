@@ -1,0 +1,13 @@
+g++ -c domain.cpp
+g++ -c main.cpp
+g++ -c mscs.cpp
+g++ -c rect.cpp
+g++ -c set2d.cpp
+g++ -c qtree.cpp
+
+#g++ -o mkdom main.o domain.o mscs.o rect.o
+g++ -o set2d set2d.o domain.o rect.o mscs.o
+g++ -o qtree qtree.o domain.o rect.o mscs.o
+rm *.o
+
+

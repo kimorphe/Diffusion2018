@@ -11,6 +11,7 @@ class Circ{
 	public:
 		double xc[2];	// center 
 		double radi;	// radius
+		void draw(char fn[128],int npnt, char mode[3]);
 		bool isin(double* x);
 	private:
 };

@@ -25,6 +25,17 @@ bool Circ :: isin(double *x){
 		return false;
 	}
 };
+void Circ::draw(char fn[128],int npnt,char mode[3]){
+	FILE *fp=fopen(fn,mode);
+	double th1=0.0,th2=atan(1.0)*4.0*2.0;
+	double th,dth=(th2-th1)/(npnt-1);
+	for(int i=0;i<npnt;i++){
+		th=th1+dth*i;
+		fprintf(fp,"%lf %lf\n",xc[0]+radi*cos(th),xc[1]+radi*sin(th));
+	};
+	fprintf(fp,"\n");
+	fclose(fp);
+};
 
 //-------------Dom2D Class ------------------
 int Dom2D :: count(int iphs){
