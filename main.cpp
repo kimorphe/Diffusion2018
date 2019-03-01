@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <random>
+#include "set2d.h"
 #include "domain.h"
 
 int main(){

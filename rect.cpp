@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
-#include "domain.h"
+#include "set2d.h"
+//#include "domain.h"
 
 void RECT :: setup(
 	double x1[2], //endpoint 1

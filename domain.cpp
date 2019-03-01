@@ -3,6 +3,7 @@
 #include<math.h> 
 #include<string.h>
 #include<stdlib.h>
+#include "set2d.h"
 #include "domain.h"
 #include "mscs.h"
 using namespace std;

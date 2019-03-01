@@ -6,36 +6,6 @@ void show_msg(char *fname);
 //		DOMAIN CLASS
 //
 //	********************************************
-//-------------Circ Class--------------------
-class Circ{
-	public:
-		double xc[2];	// center 
-		double radi;	// radius
-		void draw(char fn[128],int npnt, char mode[3]);
-		bool isin(double* x);
-	private:
-};
-//----------- Rectangle Class -------------
-class RECT{
-	public:
-	double x[4],y[4];
-	double xmin,xmax,ymin, ymax;
-	void setup(
-		double xc[2], //	center
-		double b,  //	width
-		double h,  //	height
-		double th  //	counterclock-wise angle in degree
-	);
-	void setup(
-		double x1[2], //endpoint 1
-		double x2[2], //endpoint 2
-		double t,	// thickness
-		int endcap	// endcap (0:none, 1:add)
-	);
-	void out(char *fname);
-	int isin(double xf[2]);
-	private:
-};
 
 //-------------Dom2D Class ------------------
 class Dom2D{

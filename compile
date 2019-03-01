@@ -4,10 +4,12 @@ g++ -c mscs.cpp
 g++ -c rect.cpp
 g++ -c set2d.cpp
 g++ -c qtree.cpp
+g++ -c vec2.cpp
 
+g++ -c test_pixel.cpp
 #g++ -o mkdom main.o domain.o mscs.o rect.o
-g++ -o set2d set2d.o domain.o rect.o mscs.o
-g++ -o qtree qtree.o domain.o rect.o mscs.o
+g++ -o test_pixel test_pixel.o set2d.o domain.o rect.o mscs.o vec2.o
+g++ -o qtree qtree.o set2d.o domain.o rect.o mscs.o vec2.o
 rm *.o
 
 
