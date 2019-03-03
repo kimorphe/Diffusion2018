@@ -13,6 +13,7 @@ void show_msg(char *fname){
 	printf(" --> process terminated.");
 	exit(-1);
 }
+/*
 bool Circ :: isin(double *x){
 	double dist;
 
@@ -37,7 +38,7 @@ void Circ::draw(char fn[128],int npnt,char mode[3]){
 	fprintf(fp,"\n");
 	fclose(fp);
 };
-
+*/
 //-------------Dom2D Class ------------------
 int Dom2D :: count(int iphs){
 	int i,j,isum=0;

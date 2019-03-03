@@ -87,7 +87,7 @@ double distP2L(
 
 	tx=vdiff(y2,y1);
 	r12=tx.len();
-	tx.div(r12);
+	tx=tx.div(r12);
 
 	nx.set(-tx.x[1],tx.x[0]);
 
@@ -97,12 +97,12 @@ double distP2L(
 	if(*rmin > r2) *rmin=r2;
 	if(*rmax < r2) *rmax=r2;
 
-	double Xt=iprod(tx,vdiff(xp,x1));
+	double Xt=iprod(tx,vdiff(xp,y1));
 
 	if(Xt < 0.0) return(*rmin);
 	if(Xt > r12) return(*rmin);
 
-	double Xn=iprod(nx,vdiff(xp,x1));
+	double Xn=iprod(nx,vdiff(xp,y1));
 	
 	*rmin=fabs(Xn);
 	return(*rmin);

@@ -1,4 +1,4 @@
-#define DB 0
+#define DB 4
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -6,6 +6,30 @@
 #include "set2d.h"
 
 using namespace std;
+bool Circ :: isin(double *x){
+	double dist;
+
+	dist=(x[0]-xc[0])*(x[0]-xc[0]);
+	dist+=(x[1]-xc[1])*(x[1]-xc[1]);
+	dist=sqrt(dist);
+
+	if(dist <= radi){
+		return true;
+	}{
+		return false;
+	}
+};
+void Circ::draw(char fn[128],int npnt,char mode[3]){
+	FILE *fp=fopen(fn,mode);
+	double th1=0.0,th2=atan(1.0)*4.0*2.0;
+	double th,dth=(th2-th1)/(npnt-1);
+	for(int i=0;i<npnt;i++){
+		th=th1+dth*i;
+		fprintf(fp,"%lf %lf\n",xc[0]+radi*cos(th),xc[1]+radi*sin(th));
+	};
+	fprintf(fp,"\n");
+	fclose(fp);
+};
 Pixel::Pixel(){
 	Xa[0]=0.0; Xa[1]=0.0;
 	Xb[0]=1.0; Xb[1]=1.0;
@@ -245,10 +269,11 @@ void Ellip::draw(int np){
 		th=i*dth;
 		x=radi[0]*cos(th);
 		y=radi[1]*sin(th);
-		X= cosp*x+sinp*y+xc[0];
-		Y=-sinp*x+cosp*y+xc[1];
+		X= cosp*x-sinp*y+xc[0];
+		Y= sinp*x+cosp*y+xc[1];
 	       	printf("%lf %lf\n",X,Y);
 	}
+	printf("\n");
 };
 void Ellip::draw(char fn[128], int np, char mode[3]){
 	FILE *fp=fopen(fn,mode);
@@ -260,10 +285,11 @@ void Ellip::draw(char fn[128], int np, char mode[3]){
 		th=i*dth;
 		x=radi[0]*cos(th);
 		y=radi[1]*sin(th);
-		X= cosp*x+sinp*y+xc[0];
-		Y=-sinp*x+cosp*y+xc[1];
+		X= cosp*x-sinp*y+xc[0];
+		Y= sinp*x+cosp*y+xc[1];
 	       	fprintf(fp,"%lf %lf\n",X,Y);
 	}
+	fprintf(fp,"\n");
 
 	fclose(fp);
 };
@@ -273,7 +299,7 @@ void Ellip::set_xc(double x, double y){
 };
 void Ellip::set_radi(double r1, double r2){
 	radi[0]=r1;
-	radi[0]=r2;
+	radi[1]=r2;
 };
 void Ellip::set_phi(double ang){
 	double pi=4.0*atan(1.0);
@@ -286,8 +312,8 @@ bool Ellip::is_in(double xf[2]){
 	yf[1]=xf[1]-xc[1];
 
 	double cosp=cos(phi),sinp=sin(phi);
-	Y[0]=cosp*yf[0]-sinp*yf[1];
-	Y[1]=sinp*yf[0]+cosp*yf[1];
+	Y[0]=cosp*yf[0]+sinp*yf[1];
+	Y[1]=-sinp*yf[0]+cosp*yf[1];
 	Y[0]/=radi[0];
 	Y[1]/=radi[1];
 
@@ -429,6 +455,122 @@ int poly_cross(Poly A, Poly B){
 
 	return(3); // A^B != \phi
 };
+int poly_cross(Poly A, Circ B){
+	int intr=0,extr=0;
+	int i;
+	double x1[2],x2[2];
+	double rmin,rmax;
+	int np=A.np;
+
+	for(i=0; i<np; i++){
+		x1[0]=A.xs[i]; x1[1]=A.ys[i];
+		x2[0]=A.xs[(i+1)%np]; x2[1]=A.ys[(i+1)%np];
+		distP2L(B.xc,x1,x2,&rmin,&rmax);	
+		if(rmax < B.radi) intr++;
+		if(rmin > B.radi) extr++;
+	}
+	if(intr==np) return(2); // A< B
+	if(extr==np){
+		if(A.is_in(B.xc)){
+			return(1); //B <A
+		}else{
+			return(0); // A ^ B = \phi
+		}
+	}	
+	return(3); // A ^ B != \phi
+};
+int poly_cross(Poly A, Ellip B){
+
+	int np=A.np;
+	double phi=B.phi;
+	double cosp=cos(phi),sinp=sin(phi);
+
+	Poly Ad(np);
+	Circ Bd;
+	Bd.xc[0]=0.0;
+	Bd.xc[1]=0.0;
+	Bd.radi=1.0;
+	//Bd.draw("temp.dat",100,"a");
+
+	double *xcod=Ad.xs;
+	double *ycod=Ad.ys;
+
+	double x,y;
+	for(int i=0;i<np;i++){
+		x=A.xs[i]-B.xc[0];
+		y=A.ys[i]-B.xc[1];
+		xcod[i]= cosp*x + sinp*y;
+		ycod[i]=-sinp*x + cosp*y;
+		xcod[i]/=B.radi[0];
+		ycod[i]/=B.radi[1];
+	};
+
+	//Ad.draw("temp.dat","a");
+
+	return(poly_cross(Ad,Bd));
+};
+#if DB==4
+int main(){
+	char fname[128]="temp.dat";
+	char md[3]="w";
+
+	Poly plA(5);
+	plA.xs[0]=0.0; plA.ys[0]=0.0;
+	plA.xs[1]=1.0; plA.ys[1]=0.0;
+	plA.xs[2]=1.0; plA.ys[2]=1.0;
+	plA.xs[3]=0.5; plA.ys[3]=1.5;
+	plA.xs[4]=0.0; plA.ys[4]=0.8;
+	plA.set_center();
+	plA.draw(fname,md);
+
+	Ellip elB;
+	elB.set_xc(-0.5,-0.5);
+	elB.set_radi(1.5,0.5);
+
+
+	sprintf(md,"a");
+	double phi=45.0;
+	for(int i=0;i<10;i++){
+		elB.set_phi(phi);
+		printf("icrs=%d\n",poly_cross(plA,elB));
+		elB.draw(fname,100,md);
+		//phi+=15.0;
+		elB.radi[0]*=1.1;
+		elB.radi[1]*=1.1;
+	};
+
+	return(0);
+};
+#endif
+#if DB==3
+int main(){
+	char fname[128]="temp.dat";
+	char md[3]="w";
+
+	Poly plA(5);
+	plA.xs[0]=0.0; plA.ys[0]=0.0;
+	plA.xs[1]=1.0; plA.ys[1]=0.0;
+	plA.xs[2]=1.0; plA.ys[2]=1.0;
+	plA.xs[3]=0.5; plA.ys[3]=1.5;
+	plA.xs[4]=0.0; plA.ys[4]=0.8;
+	plA.set_center();
+
+	Circ crB;
+	crB.xc[0]=0.0;
+	crB.xc[1]=0.0;
+	crB.radi=0.25;
+	plA.draw(fname,md);
+	sprintf(md,"a");
+	for(int i=0;i<10;i++){
+		crB.draw(fname,100,md);
+		printf("icrs=%d\n",poly_cross(plA,crB));
+		//crB.radi+=0.1;
+		crB.xc[0]+=0.25;
+		crB.xc[1]+=0.25;
+	};
+	return(0);
+};
+#endif
 #if DB==2
 int main(){
 	Poly plA(5);
