@@ -4,6 +4,7 @@
 #include <math.h>
 #include "set2d.h"
 
+/*
 class Solid{
 	public:
 		int nelp;
@@ -14,6 +15,7 @@ class Solid{
 	private:
 	protected:
 };
+*/
 Solid::Solid(){};
 Solid::Solid(int n){
 	nelp=n;
@@ -40,11 +42,34 @@ int main(){
 	SLD.els[1]=SLD.els[0];
 	SLD.els[2]=SLD.els[0];
 
-	SLD.els[1].xc[1]=1.0;
-	SLD.els[2].xc[1]=2.0;
+	SLD.els[1].xc[1]=2.0;
+	SLD.els[1].set_phi(85.0);
+	SLD.els[1].radi[0]=2.0;
+
+	SLD.els[2].xc[1]=4.0;
 
 	char fn[128]="log.txt";
-	SLD.draw(fn,100);
+
+	double xa[2],xb[2];
+	xa[0]=-1.0; xa[1]=-1.0;
+	xb[0]= 1.0; xb[1]=5.0;
+	QPatch qp0;	// root node
+	qp0.set_lim(xa,xb);
+
+	int count;
+	count=0;
+	Qtree(&qp0, SLD,&count);
+	printf("number of leaves=%d\n",count);
+
+	char fname[128]="qtree.out";
+	char mode[3]="w";
+	SLD.draw(fname,100);
+
+	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);
+	count=0;
+	gather_leaves(&qp0,&count,qp_leaves);
+	sprintf(mode,"a");
+	for(int i=0;i<count;i++) qp_leaves[i].draw(fname,mode);
 	return(0);
 };
 #if DB==1
@@ -68,10 +93,10 @@ int main(){
 	count=0;
 	Qtree(&qp0, cr,&count);
 	printf("number of leaves=%d\n",count);
+
 	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);
 	count=0;
 	gather_leaves(&qp0,&count,qp_leaves);
-
 	sprintf(mode,"a");
 	for(int i=0;i<count;i++) qp_leaves[i].draw(fname,mode);
 

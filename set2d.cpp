@@ -239,6 +239,62 @@ int Qtree(QPatch *qp, Circ cr,int *count){
 	return(qp->lev);
 };
 //---------------------------------------------------------------
+int Qtree(QPatch *qp, Solid sld,int *count){
+
+	int i,j,k,icrs;
+	double Xa[2],Ya[2],Wd[2];
+
+	int lev=qp->lev;
+
+	if(lev > 6){
+		//qp->draw();
+		(*count)++;
+		return(lev);
+	}
+
+	icrs=0;
+	Ellip elp;
+	Poly pl;
+	pl.np=4;
+	pl.xs=qp->px.xs;
+	pl.ys=qp->px.ys;
+	int ic;
+	for(i=0;i<sld.nelp;i++){
+		//printf("ielp=%d\n",i);
+		elp=sld.els[i];
+		//if(poly_cross(qp->px, elp)>1){
+		ic=poly_cross(pl, elp);
+		if(ic >1){
+			icrs=2;
+			break;
+		}
+	};
+	//printf("Relation of G to A is %d\n",icrs);
+	//translate_crs(icrs);
+	Wd[0]=qp->px.Wd[0]*0.5;
+	Wd[1]=qp->px.Wd[1]*0.5;
+	Xa[0]=qp->px.Xa[0];
+	Xa[1]=qp->px.Xa[1];
+	if(icrs>1){
+		k=0;
+		for(j=0; j<2; j++){
+			Ya[1]=Xa[1]+Wd[1]*j;
+		for(i=0; i<2; i++){
+			Ya[0]=Xa[0]+Wd[0]*i;
+			qp->chld[k]=new_QPatch(Ya,Wd);
+			qp->chld[k]->par=qp;
+			qp->chld[k]->lev=lev+1;
+			//Qtree(qp->chld[k], cr, count);
+			Qtree(qp->chld[k], sld, count);
+			k++;
+		}
+		}
+	}else{
+		(*count)++;
+		//qp->draw();
+	};
+	return(qp->lev);
+};
 
 Ellip::Ellip(){
 	xc[0]=0.0; xc[1]=0.0;
@@ -306,24 +362,6 @@ bool Ellip::is_in(double xf[2]){
 
 	if(Y[0]*Y[0]+Y[1]*Y[1]>1.0) iin=false;
 	return(iin);
-};
-class Poly{
-	public:
-		int np;	
-		double *xs,*ys;
-		double xg[2];	// centroide
-		void draw();
-		void draw(char fn[128],char mode[3]);
-		void mem_alloc();
-		Poly();
-		Poly(int n);
-		bool is_in(double xf[2]);
-		void slide(double ux, double uy);
-		void rotate(double xc[2], double th);
-		void rotate(int node_num, double th);
-		void set_center();
-	private:
-	protected:
 };
 Poly::Poly(){};
 Poly::Poly(int n){
@@ -426,7 +464,7 @@ int poly_cross(Poly A, Poly B){
 		if(B.is_in(xf)) intr++;
 	};
 
-	if(intr==A.np) return(2); // A < B
+	if(intr==A.np) return(1); // A < B
 
 	int jntr=0;
 	for(i=0;i<B.np;i++){
@@ -435,7 +473,7 @@ int poly_cross(Poly A, Poly B){
 		if(A.is_in(xf)) jntr++;
 	};
 
-	if(jntr==B.np) return(1); // B < A
+	if(jntr==B.np) return(2); // B < A
 	if((intr+jntr)==0) return(0); // A^B=\phi
 
 	return(3); // A^B != \phi
@@ -454,10 +492,10 @@ int poly_cross(Poly A, Circ B){
 		if(rmax < B.radi) intr++;
 		if(rmin > B.radi) extr++;
 	}
-	if(intr==np) return(2); // A< B
+	if(intr==np) return(1); // A< B
 	if(extr==np){
 		if(A.is_in(B.xc)){
-			return(1); //B <A
+			return(2); //B <A
 		}else{
 			return(0); // A ^ B = \phi
 		}

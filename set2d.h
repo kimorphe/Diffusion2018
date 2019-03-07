@@ -72,6 +72,16 @@ class Pixel{
 int is_cross(Pixel px, Circ cr);
 void translate_crs(int icrs);
 //---------------------------------------------------
+class Solid{
+	public:
+		int nelp;
+		Ellip *els;
+		Solid();
+		Solid(int n);
+		void draw(char fn[128],int ndat);
+	private:
+	protected:
+};
 class QPatch{
 	public:
 		Pixel px;	// pixel data
@@ -89,3 +99,26 @@ class QPatch{
 QPatch *new_QPatch(double Xa[2], double Wd[2]);
 void gather_leaves(QPatch *qp_par, int *count, QPatch *qp_leaves);
 int Qtree(QPatch *qp, Circ cr,int *count);
+int Qtree(QPatch *qp, Solid sld,int *count);
+
+class Poly{
+	public:
+		int np;	
+		double *xs,*ys;
+		double xg[2];	// centroide
+		void draw();
+		void draw(char fn[128],char mode[3]);
+		void mem_alloc();
+		Poly();
+		Poly(int n);
+		bool is_in(double xf[2]);
+		void slide(double ux, double uy);
+		void rotate(double xc[2], double th);
+		void rotate(int node_num, double th);
+		void set_center();
+	private:
+	protected:
+};
+int poly_cross(Poly A, Poly B);
+int poly_cross(Poly A, Circ B);
+int poly_cross(Poly A, Ellip B);
