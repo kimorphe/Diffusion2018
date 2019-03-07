@@ -32,6 +32,21 @@ class RECT{
 	int isin(double xf[2]);
 	private:
 };
+class Ellip{
+	public:
+		double xc[2];	// center
+		double radi[2]; // radii
+		double phi;	// angle [rad]
+		void draw(char fn[128], int np, char mode[3]);
+		void draw(int np);
+		void set_xc(double x,double y);
+		void set_radi(double r1,double r2);
+		void set_phi(double ang);
+		bool is_in(double xf[2]);
+		Ellip();
+	private:
+	protected:
+};
 //------------------ Pixel Class ------------------
 class Pixel{
 	public:

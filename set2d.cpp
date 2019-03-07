@@ -1,4 +1,4 @@
-#define DB 4
+#define DB 0
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -239,21 +239,6 @@ int Qtree(QPatch *qp, Circ cr,int *count){
 	return(qp->lev);
 };
 //---------------------------------------------------------------
-class Ellip{
-	public:
-		double xc[2];	// center
-		double radi[2]; // radii
-		double phi;	// angle [rad]
-		void draw(char fn[128], int np, char mode[3]);
-		void draw(int np);
-		void set_xc(double x,double y);
-		void set_radi(double r1,double r2);
-		void set_phi(double ang);
-		bool is_in(double xf[2]);
-		Ellip();
-	private:
-	protected:
-};
 
 Ellip::Ellip(){
 	xc[0]=0.0; xc[1]=0.0;

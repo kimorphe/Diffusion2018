@@ -1,8 +1,53 @@
+#define DB 0
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "set2d.h"
 
+class Solid{
+	public:
+		int nelp;
+		Ellip *els;
+		Solid();
+		Solid(int n);
+		void draw(char fn[128],int ndat);
+	private:
+	protected:
+};
+Solid::Solid(){};
+Solid::Solid(int n){
+	nelp=n;
+	els=(Ellip *)malloc(sizeof(Ellip)*nelp);
+};
+void Solid::draw(char fn[128],int ndat){
+	char md[3];
+	for(int i=0;i<nelp;i++){
+		sprintf(md,"a");
+		if(i==0) sprintf(md,"w");
+		els[i].draw(fn,ndat,md);
+	}
+};
+
+int main(){
+	Solid SLD(3);
+
+	SLD.els[0].xc[0]=0.0;
+	SLD.els[0].xc[0]=0.0;
+	SLD.els[0].phi=10.0;
+	SLD.els[0].radi[0]=1.0;
+	SLD.els[0].radi[1]=0.6;
+
+	SLD.els[1]=SLD.els[0];
+	SLD.els[2]=SLD.els[0];
+
+	SLD.els[1].xc[1]=1.0;
+	SLD.els[2].xc[1]=2.0;
+
+	char fn[128]="log.txt";
+	SLD.draw(fn,100);
+	return(0);
+};
+#if DB==1
 int main(){
 	int count;
 	char fname[128]="qtree.out";
@@ -32,3 +77,4 @@ int main(){
 
 	return(0);
 };
+#endif
