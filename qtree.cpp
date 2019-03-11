@@ -72,6 +72,23 @@ int main(){
 		if(qp_leaves[i].intr) qp_leaves[i].draw(fname,mode);
 	}
 
+	sprintf(fname,"qtree_bnd.out");
+	SLD.draw(fname,100);
+	sprintf(mode,"a");
+	bx.draw(fname,mode);
+	for(int i=0;i<count;i++){
+		if(qp_leaves[i].bndr) qp_leaves[i].draw(fname,mode);
+	}
+
+	sprintf(fname,"qtree.out");
+	SLD.draw(fname,100);
+	sprintf(mode,"a");
+	bx.draw(fname,mode);
+	for(int i=0;i<count;i++){
+		qp_leaves[i].draw(fname,mode);
+	}
+
+
 	return(0);
 };
 #endif

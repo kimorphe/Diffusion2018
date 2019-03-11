@@ -325,17 +325,20 @@ int Qtree(QPatch *qp, Solid sld,int *count){
 	pl.np=4;
 	pl.xs=qp->px.xs;
 	pl.ys=qp->px.ys;
+
 	int ic,ic_max=0;
+	bool set_or=false;
 	qp->intr=true;
-	qp->extr=true;
+	qp->extr=false;
 	for(i=0;i<sld.nelp;i++){
 		elp=sld.els[i];
 		ic=poly_cross(pl, elp);
 		if(ic>ic_max) ic_max=ic;
 
-		if(ic==3) qp->bndr=true;  // all boundary
-		if(ic!=1) qp->intr=false; // intersection
-		if(ic!=0) qp->extr=false; // ~intersection
+		if(ic==3) qp->bndr=true;  // detect all boundary
+		if(ic!=1) qp->intr=false; // intersection (AND)
+		if(ic==0) qp->extr=true; // ~intersection (exclusive OR)
+		if(ic==1) set_or=true;	//  union (OR)
 
 		if(ic >1){
 			icrs=ic;
@@ -344,8 +347,13 @@ int Qtree(QPatch *qp, Solid sld,int *count){
 	};
 
 	icrs=0;
-	if(qp->intr) icrs=1;
-	if(qp->bndr) icrs=3;
+	if(qp->intr){
+		icrs=1;
+	}else{
+		//if(qp->bndr && set_or) icrs=3;
+		if(qp->bndr) icrs=3;
+	}
+	if(qp->bndr && !set_or) qp->bndr=false;
 
 	if(lev > 6){
 		(*count)++;
