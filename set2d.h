@@ -2,12 +2,27 @@
 #include <stdlib.h>
 #include <math.h>
 
+//--------------Bounding Box  Class--------------------
+class Bbox{
+	public:
+	double Xa[2];
+	double Xb[2];
+	void set_Xa(double x, double y);
+	void set_Xb(double x, double y);
+	void draw();
+	void draw(char fn[128],char mode[3]);
+	private:
+};
+Bbox bbx_union(Bbox b1, Bbox b2);
+Bbox bbx_cross(Bbox b1, Bbox b2);
 //------------------------Circ Class--------------------
 class Circ{
 	public:
 		double xc[2];	// center 
 		double radi;	// radius
 		void draw(char fn[128],int npnt, char mode[3]);
+		Bbox bbx;	// bounding box
+		void bbox();	// set bounding box
 		bool isin(double* x);
 	private:
 };
@@ -42,6 +57,9 @@ class Ellip{
 		void set_xc(double x,double y);
 		void set_radi(double r1,double r2);
 		void set_phi(double ang);
+		void scale(double s);
+		Bbox bbx;	// bounding box
+		void bbox();	// set bounding box
 		bool is_in(double xf[2]);
 		Ellip();
 	private:
@@ -92,6 +110,7 @@ class QPatch{
 		void draw(char fn[128],char mode[3]);
 		void draw();
 		int lev;
+		int icrs;	//  0:exterior/ 1:interior/ 2:inclusive/ 3:boundary pixel
 		void set_lim(double xa[2], double xb[2]);
 	private:
 	protected:
@@ -115,6 +134,8 @@ class Poly{
 		void slide(double ux, double uy);
 		void rotate(double xc[2], double th);
 		void rotate(int node_num, double th);
+		Bbox bbx;	// set bounding box
+		void bbox();	// set bounding box
 		void set_center();
 	private:
 	protected:

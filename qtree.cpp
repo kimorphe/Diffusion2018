@@ -61,15 +61,21 @@ int main(){
 	Qtree(&qp0, SLD,&count);
 	printf("number of leaves=%d\n",count);
 
-	char fname[128]="qtree.out";
-	char mode[3]="w";
-	SLD.draw(fname,100);
 
 	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);
 	count=0;
 	gather_leaves(&qp0,&count,qp_leaves);
-	sprintf(mode,"a");
-	for(int i=0;i<count;i++) qp_leaves[i].draw(fname,mode);
+
+
+	char fname[128], mode[3];
+	for(int typ=0;typ<4;typ++){
+		sprintf(fname,"qtree%d.out",typ);
+		SLD.draw(fname,100);
+		sprintf(mode,"a");
+	for(int i=0;i<count;i++){
+		if(qp_leaves[i].icrs==typ) qp_leaves[i].draw(fname,mode);
+	}
+	}
 	return(0);
 };
 #if DB==1
