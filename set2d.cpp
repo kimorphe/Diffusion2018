@@ -41,7 +41,7 @@ double dmax(double x, double y){
 	if(x>=y) return(x);
 	return(y);
 };
-Bbox bbx_cross(Bbox b1, Bbox b2){
+Bbox bbox_cross(Bbox b1, Bbox b2){
 	Bbox b3;
 
 	double xmin=dmax(b1.Xa[0],b2.Xa[0]);
@@ -55,7 +55,7 @@ Bbox bbx_cross(Bbox b1, Bbox b2){
 	b3.set_Xb(xmax,ymax);
 	return(b3);
 };
-Bbox bbx_union(Bbox b1, Bbox b2){
+Bbox bbox_union(Bbox b1, Bbox b2){
 	Bbox b3;
 
 	double xmin=dmin(b1.Xa[0],b2.Xa[0]);
@@ -91,9 +91,9 @@ void Circ::draw(char fn[128],int npnt,char mode[3]){
 	fprintf(fp,"\n");
 	fclose(fp);
 };
-void Circ::bbox(){
-	bbx.set_Xa(xc[0]-radi,xc[1]-radi);
-	bbx.set_Xb(xc[0]+radi,xc[1]+radi);
+void Circ::set_bbox(){
+	bbox.set_Xa(xc[0]-radi,xc[1]-radi);
+	bbox.set_Xb(xc[0]+radi,xc[1]+radi);
 };
 Pixel::Pixel(){
 	Xa[0]=0.0; Xa[1]=0.0;
@@ -222,6 +222,7 @@ QPatch::QPatch(){
 	par=NULL;
 	lev=0;
 	icrs=0;	
+	bndr=false; intr=false; extr=false;
 	for(int i=0;i<4;i++) chld[i]=NULL;
 };
 void QPatch::print(){
@@ -245,6 +246,7 @@ QPatch *new_QPatch(double Xa[2], double Wd[2]){
 	Xb[1]=Xa[1]+Wd[1];
 	qp->icrs=0;
 	qp->set_lim(Xa,Xb);
+	qp->bndr=false; qp->intr=false; qp->extr=false;
 	for(int i=0;i<4;i++) qp->chld[i]=NULL;
 	return(qp);
 };
@@ -324,22 +326,31 @@ int Qtree(QPatch *qp, Solid sld,int *count){
 	pl.xs=qp->px.xs;
 	pl.ys=qp->px.ys;
 	int ic,ic_max=0;
+	qp->intr=true;
+	qp->extr=true;
 	for(i=0;i<sld.nelp;i++){
-		//printf("ielp=%d\n",i);
 		elp=sld.els[i];
-		//if(poly_cross(qp->px, elp)>1){
 		ic=poly_cross(pl, elp);
 		if(ic>ic_max) ic_max=ic;
+
+		if(ic==3) qp->bndr=true;  // all boundary
+		if(ic!=1) qp->intr=false; // intersection
+		if(ic!=0) qp->extr=false; // ~intersection
+
 		if(ic >1){
 			icrs=ic;
-			break;
+//			break;
 		}
 	};
 
+	icrs=0;
+	if(qp->intr) icrs=1;
+	if(qp->bndr) icrs=3;
+
 	if(lev > 6){
-		//qp->draw();
 		(*count)++;
-		qp->icrs=ic_max;
+		//qp->icrs=ic_max;
+		qp->icrs=icrs;
 		return(lev);
 	}
 
@@ -365,7 +376,8 @@ int Qtree(QPatch *qp, Solid sld,int *count){
 		}
 	}else{
 		(*count)++;
-		qp->icrs=ic_max;
+		//qp->icrs=ic_max;
+		qp->icrs=icrs;
 		//qp->draw();
 	};
 	return(qp->lev);
@@ -376,7 +388,7 @@ Ellip::Ellip(){
 	radi[0]=1.0; radi[1]=1.0;
 	phi=0.0;
 };
-void Ellip::bbox(){
+void Ellip::set_bbox(){
 	double cosp=cos(phi);
 	double sinp=sin(phi);
 	double a2=radi[0]*radi[0];
@@ -387,8 +399,8 @@ void Ellip::bbox(){
 	double xmax=sqrt(a2*cosp+b2*sinp);
 	double ymax=sqrt(a2*sinp+b2*cosp);
 
-	bbx.set_Xa(xc[0]-xmax,xc[1]-ymax);
-	bbx.set_Xb(xc[0]+xmax,xc[1]+ymax);
+	bbox.set_Xa(xc[0]-xmax,xc[1]-ymax);
+	bbox.set_Xb(xc[0]+xmax,xc[1]+ymax);
 
 };
 void Ellip::scale(double s){
@@ -478,7 +490,7 @@ void Poly::set_center(){
 	xg[0]/=np;
 	xg[1]/=np;
 }
-void Poly::bbox(){
+void Poly::set_bbox(){
 	double xmax=xs[0];
 	double xmin=xs[0];
 	double ymax=ys[0];
@@ -491,8 +503,8 @@ void Poly::bbox(){
 		if(ys[i]<ymin) ymin=ys[i];
 	};
 
-	bbx.set_Xa(xmin,ymin);
-	bbx.set_Xb(xmax,ymax);
+	bbox.set_Xa(xmin,ymin);
+	bbox.set_Xb(xmax,ymax);
 };
 void Poly::draw(){
 	for(int i=0;i<=np;i++){
@@ -649,8 +661,8 @@ int main(){
 	el.set_radi(2.0,0.5);
 	el.scale(0.5);
 	el.set_phi(130.0);
-	el.bbox();
-	el.bbx.draw();
+	el.set_bbox();
+	el.bbox.draw();
 	el.draw(50);
 
 	Poly plA(5);
@@ -662,15 +674,17 @@ int main(){
 	plA.rotate(1,30.0);
 	plA.slide(2.0,2.0);
 	plA.draw();
-	plA.bbox();
-	plA.bbx.draw();
+	plA.set_bbox();
+	plA.bbox.draw();
 
 
-	Bbox bbu=bbx_union(el.bbx,plA.bbx);
-	Bbox bbc=bbx_cross(el.bbx,plA.bbx);
+	Bbox bbu=bbox_union(el.bbox,plA.bbox);
+	Bbox bbc=bbox_cross(el.bbox,plA.bbox);
 
-	bbu.draw();
-	bbc.draw();
+	//bbu.draw();
+	//bbc.draw();
+	//
+	
 
 	return(0);
 };

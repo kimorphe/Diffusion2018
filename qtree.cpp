@@ -1,4 +1,4 @@
-#define DB 0
+#define DB 3
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -29,7 +29,53 @@ void Solid::draw(char fn[128],int ndat){
 		els[i].draw(fn,ndat,md);
 	}
 };
+#if DB==3	// measuring area
+int main(){
+	Solid SLD(2);
 
+	SLD.els[0].xc[0]=0.0;
+	SLD.els[0].xc[0]=0.0;
+	SLD.els[0].phi=5.0;
+	SLD.els[0].radi[0]=1.0;
+	SLD.els[0].radi[1]=0.5;
+
+	SLD.els[1]=SLD.els[0];
+	SLD.els[1].set_phi(80.0);
+	SLD.els[1].xc[0]+=0.25;
+	SLD.els[1].xc[0]+=0.5;
+
+	SLD.els[0].set_bbox();
+	SLD.els[1].set_bbox();
+
+	//Bbox bx=bbox_union(SLD.els[0].bbox,SLD.els[1].bbox);
+	Bbox bx=bbox_cross(SLD.els[0].bbox,SLD.els[1].bbox);
+	QPatch qp0;	// root node
+	qp0.set_lim(bx.Xa,bx.Xb);
+
+	char fn[128]="log.txt";
+	SLD.draw(fn,100);
+	int count=0;
+	Qtree(&qp0, SLD,&count);
+	printf("number of leaves=%d\n",count);
+
+	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);
+	count=0;
+	gather_leaves(&qp0,&count,qp_leaves);
+
+	char fname[128], mode[3];
+
+	sprintf(fname,"qtree_in.out");
+	SLD.draw(fname,100);
+	sprintf(mode,"a");
+	bx.draw(fname,mode);
+	for(int i=0;i<count;i++){
+		if(qp_leaves[i].intr) qp_leaves[i].draw(fname,mode);
+	}
+
+	return(0);
+};
+#endif
+#if DB==2	// testing Solid class
 int main(){
 	Solid SLD(3);
 
@@ -61,7 +107,6 @@ int main(){
 	Qtree(&qp0, SLD,&count);
 	printf("number of leaves=%d\n",count);
 
-
 	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);
 	count=0;
 	gather_leaves(&qp0,&count,qp_leaves);
@@ -78,6 +123,7 @@ int main(){
 	}
 	return(0);
 };
+#endif
 #if DB==1
 int main(){
 	int count;
