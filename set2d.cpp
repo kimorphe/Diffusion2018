@@ -312,52 +312,97 @@ int Qtree(QPatch *qp, Circ cr,int *count){
 	return(qp->lev);
 };
 //---------------------------------------------------------------
-int Qtree(QPatch *qp, Solid sld,int *count){
+int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 
 	int i,j,k,icrs;
 	double Xa[2],Ya[2],Wd[2];
 
 	int lev=qp->lev;
 
-	icrs=0;
-	Ellip elp;
+//	Ellip elp;
 	Poly pl;
 	pl.np=4;
 	pl.xs=qp->px.xs;
 	pl.ys=qp->px.ys;
 
-	int ic,ic_max=0;
+	int ic;
+	bool init=false;
+
+	// Tile union of all sets (particles);
+	int isum=0;
+	for(i=0;i<sld.nelp;i++){
+		if(sld.isect[i]) continue;
+		if(isum==0){
+			qp->intr=false;
+			qp->extr=true;
+			init=true;
+		}
+		ic=poly_cross(pl, sld.els[i]);
+		if(ic==1) qp->intr=true; // union (OR)
+		if(ic!=0) qp->extr=false; 
+		isum++;
+	}
+	// Tile intersection of all sets (particles)
+	if(!init){
+		qp->intr=true;
+		qp->extr=false;
+	}
+	for(i=0;i<sld.nelp;i++){
+		if(sld.isect[i]){
+		ic=poly_cross(pl, sld.els[i]);
+		if(ic!=1) qp->intr=false; // intersection (AND)
+		if(ic==0) qp->extr=true; 
+		}
+	}
+
+	qp->bndr=false;
+	if( !(qp->intr)){
+	       if(!(qp->extr)){
+		       qp->bndr=true;
+	       }
+	 }
+
+/*
 	bool set_or=false;
 	qp->intr=true;
 	qp->extr=false;
 	for(i=0;i<sld.nelp;i++){
 		elp=sld.els[i];
 		ic=poly_cross(pl, elp);
-		if(ic>ic_max) ic_max=ic;
-
-		if(ic==3) qp->bndr=true;  // detect all boundary
-		if(ic!=1) qp->intr=false; // intersection (AND)
 		if(ic==0) qp->extr=true; // ~intersection (exclusive OR)
 		if(ic==1) set_or=true;	//  union (OR)
-
-		if(ic >1){
-			icrs=ic;
-//			break;
+		if(ic!=1) qp->intr=false; // intersection (AND)
+		if(ic==3){
+		       	qp->bndr=true;  // detect all boundary
+			nbnd++;
 		}
 	};
+*/
 
-	icrs=0;
-	if(qp->intr){
-		icrs=1;
-	}else{
-		//if(qp->bndr && set_or) icrs=3;
-		if(qp->bndr) icrs=3;
+	icrs=2;
+	if(qp->extr) icrs=0;
+	if(qp->intr) icrs=1;
+	if(qp->bndr) icrs=3;
+//	if(qp->bndr && !set_or) qp->bndr=false;
+//	if(nbnd==sld.nelp) qp->bndr=true;
+/*
+	if(set_or){
+	       qp->intr=true;
+	       icrs=1;
 	}
-	if(qp->bndr && !set_or) qp->bndr=false;
+	if(qp->bndr){
+		if(set_or){
+			qp->bndr=false;
+			icrs=1;
+		}else{
+			icrs=3;
+		}	
+	};
+*/
 
-	if(lev > 6){
+
+	if(lev >= lev_max){
 		(*count)++;
-		//qp->icrs=ic_max;
 		qp->icrs=icrs;
 		return(lev);
 	}
@@ -377,14 +422,12 @@ int Qtree(QPatch *qp, Solid sld,int *count){
 			qp->chld[k]=new_QPatch(Ya,Wd);
 			qp->chld[k]->par=qp;
 			qp->chld[k]->lev=lev+1;
-			//Qtree(qp->chld[k], cr, count);
-			Qtree(qp->chld[k], sld, count);
+			Qtree(qp->chld[k], sld, count,lev_max);
 			k++;
 		}
 		}
 	}else{
 		(*count)++;
-		//qp->icrs=ic_max;
 		qp->icrs=icrs;
 		//qp->draw();
 	};
@@ -684,15 +727,8 @@ int main(){
 	plA.draw();
 	plA.set_bbox();
 	plA.bbox.draw();
-
-
 	Bbox bbu=bbox_union(el.bbox,plA.bbox);
 	Bbox bbc=bbox_cross(el.bbox,plA.bbox);
-
-	//bbu.draw();
-	//bbc.draw();
-	//
-	
 
 	return(0);
 };

@@ -20,6 +20,7 @@ Solid::Solid(){};
 Solid::Solid(int n){
 	nelp=n;
 	els=(Ellip *)malloc(sizeof(Ellip)*nelp);
+	isect=(bool *)malloc(sizeof(bool)*nelp);
 };
 void Solid::draw(char fn[128],int ndat){
 	char md[3];
@@ -31,31 +32,44 @@ void Solid::draw(char fn[128],int ndat){
 };
 #if DB==3	// measuring area
 int main(){
-	Solid SLD(2);
+	Solid SLD(3);
+
+	bool isect=true;
+	SLD.isect[0]=true;
+	SLD.isect[1]=false;
+	SLD.isect[2]=false;
 
 	SLD.els[0].xc[0]=0.0;
-	SLD.els[0].xc[0]=0.0;
-	SLD.els[0].phi=5.0;
+	SLD.els[0].xc[1]=0.0;
+	SLD.els[0].set_phi(5.0);
 	SLD.els[0].radi[0]=1.0;
 	SLD.els[0].radi[1]=0.5;
 
 	SLD.els[1]=SLD.els[0];
-	SLD.els[1].set_phi(80.0);
-	SLD.els[1].xc[0]+=0.25;
-	SLD.els[1].xc[0]+=0.5;
+	SLD.els[1].set_phi(0.0);
+	SLD.els[1].xc[0]-=0.25;
+	SLD.els[1].xc[1]+=0.5;
+
+	SLD.els[2]=SLD.els[0];
+	SLD.els[2].set_phi(-20.0);
+	SLD.els[2].xc[0]+=0.0;
+	SLD.els[2].xc[1]-=0.5;
 
 	SLD.els[0].set_bbox();
 	SLD.els[1].set_bbox();
+	SLD.els[2].set_bbox();
 
-	//Bbox bx=bbox_union(SLD.els[0].bbox,SLD.els[1].bbox);
-	Bbox bx=bbox_cross(SLD.els[0].bbox,SLD.els[1].bbox);
+	Bbox bx=bbox_union(SLD.els[0].bbox,SLD.els[1].bbox);
+	bx=bbox_union(SLD.els[2].bbox,bx);
+	//Bbox bx=bbox_cross(SLD.els[0].bbox,SLD.els[1].bbox);
+
 	QPatch qp0;	// root node
 	qp0.set_lim(bx.Xa,bx.Xb);
 
 	char fn[128]="log.txt";
 	SLD.draw(fn,100);
-	int count=0;
-	Qtree(&qp0, SLD,&count);
+	int count=0,lev_max=7;
+	Qtree(&qp0, SLD,&count,lev_max);
 	printf("number of leaves=%d\n",count);
 
 	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);
@@ -160,7 +174,8 @@ int main(){
 	qp0.set_lim(xa,xb);
 	cr.draw(fname,180,mode);
 	count=0;
-	Qtree(&qp0, cr,&count);
+	bool isect=true;
+	Qtree(&qp0, cr,&count,isect);
 	printf("number of leaves=%d\n",count);
 
 	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);

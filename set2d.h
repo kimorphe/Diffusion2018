@@ -93,6 +93,7 @@ void translate_crs(int icrs);
 class Solid{
 	public:
 		int nelp;
+		bool *isect;	// true for set intersection, faulse for union 
 		Ellip *els;
 		Solid();
 		Solid(int n);
@@ -121,7 +122,7 @@ class QPatch{
 QPatch *new_QPatch(double Xa[2], double Wd[2]);
 void gather_leaves(QPatch *qp_par, int *count, QPatch *qp_leaves);
 int Qtree(QPatch *qp, Circ cr,int *count);
-int Qtree(QPatch *qp, Solid sld,int *count);
+int Qtree(QPatch *qp, Solid sld,int *count, int lev_max);
 
 class Poly{
 	public:
