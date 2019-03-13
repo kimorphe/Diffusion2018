@@ -7,8 +7,10 @@ class Bbox{
 	public:
 	double Xa[2];
 	double Xb[2];
+	double Wd[2];
 	void set_Xa(double x, double y);
 	void set_Xb(double x, double y);
+	void set_Wd();
 	void draw();
 	void draw(char fn[128],char mode[3]);
 	private:
@@ -62,9 +64,11 @@ class Ellip{
 		void set_bbox();	// set bounding box
 		bool is_in(double xf[2]);
 		Ellip();
+		double area();
 	private:
 	protected:
 };
+bool bbox_cross(Ellip el1, Ellip el2);
 //------------------ Pixel Class ------------------
 class Pixel{
 	public:
@@ -124,6 +128,8 @@ QPatch *new_QPatch(double Xa[2], double Wd[2]);
 void gather_leaves(QPatch *qp_par, int *count, QPatch *qp_leaves);
 int Qtree(QPatch *qp, Circ cr,int *count);
 int Qtree(QPatch *qp, Solid sld,int *count, int lev_max);
+int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max);
+double area(Ellip el1, Ellip el2, int lev_max, bool isect);
 
 class Poly{
 	public:

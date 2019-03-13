@@ -12,6 +12,10 @@ void Bbox::set_Xa(double x, double y){
 void Bbox::set_Xb(double x, double y){
 	Xb[0]=x; Xb[1]=y;
 };
+void Bbox::set_Wd(){
+	Wd[0]=Xb[0]-Xa[0];
+	Wd[1]=Xb[1]-Xa[1];
+};
 void Bbox::draw(char fn[128],char mode[3]){
 	FILE *fp=fopen(fn,mode);
 
@@ -53,6 +57,7 @@ Bbox bbox_cross(Bbox b1, Bbox b2){
 	if(ymax<ymin) ymax=ymin;
 	b3.set_Xa(xmin,ymin);
 	b3.set_Xb(xmax,ymax);
+	b3.set_Wd();
 	return(b3);
 };
 Bbox bbox_union(Bbox b1, Bbox b2){
@@ -64,6 +69,7 @@ Bbox bbox_union(Bbox b1, Bbox b2){
 	double ymax=dmax(b1.Xb[1],b2.Xb[1]);
 	b3.set_Xa(xmin,ymin);
 	b3.set_Xb(xmax,ymax);
+	b3.set_Wd();
 	return(b3);
 };
 bool bbox_cross(Bbox bx, Pixel px){
@@ -71,6 +77,19 @@ bool bbox_cross(Bbox bx, Pixel px){
 	double ymin=dmax(bx.Xa[1],px.Xa[1]);
 	double xmax=dmin(bx.Xb[0],px.Xb[0]);
 	double ymax=dmin(bx.Xb[1],px.Xb[1]);
+	if(xmax<xmin) return(false);
+	if(ymax<ymin) return(false);
+	return(true);
+};
+bool bbox_cross(Ellip el1, Ellip el2){
+	double *Xa,*Xb;
+	double *Ya,*Yb;
+	Xa=el1.bbox.Xa; Xb=el1.bbox.Xb;
+	Ya=el2.bbox.Xa; Yb=el2.bbox.Xb;
+	double xmin=dmax(Xa[0],Ya[0]);
+	double ymin=dmax(Xa[1],Ya[1]);
+	double xmax=dmin(Xb[0],Yb[0]);
+	double ymax=dmin(Xb[1],Yb[1]);
 	if(xmax<xmin) return(false);
 	if(ymax<ymin) return(false);
 	return(true);
@@ -321,6 +340,117 @@ int Qtree(QPatch *qp, Circ cr,int *count){
 	return(qp->lev);
 };
 //---------------------------------------------------------------
+double area(Ellip el1, Ellip el2, int lev_max, bool isect){
+
+	Bbox bx;
+	if(isect){
+		bx=bbox_cross(el1.bbox,el2.bbox);
+	}else{
+		bx=bbox_union(el1.bbox,el2.bbox);
+	};
+
+	QPatch qp0;
+	qp0.set_lim(bx.Xa,bx.Xb);
+	int count=0;
+	Qtree(&qp0,el1,el2,isect,&count,lev_max);
+	printf("count=%d\n",count);
+	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);
+	count=0;
+	gather_leaves(&qp0,&count,qp_leaves);
+
+	int i,lev;
+	double S=0.0;
+	double ds0=bx.Wd[0]*bx.Wd[1];
+	double *ds=(double *)malloc(sizeof(double)*(lev_max+1));
+	ds[0]=ds0;
+	for(i=1;i<=lev_max;i++){
+		ds[i]=ds[i-1]*0.25;
+	};
+	for(i=0;i<count;i++){
+		if(qp_leaves[i].extr) continue;
+		lev=qp_leaves[i].lev;	
+		if(qp_leaves[i].intr) S+=ds[lev];
+		if(qp_leaves[i].bndr) S+=(0.5*ds[lev]);
+	};
+	return(S);
+};
+
+int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max){
+
+
+	int lev=qp->lev;
+	Poly pl;
+	pl.np=4;
+	pl.xs=qp->px.xs;
+	pl.ys=qp->px.ys;
+
+	int ic;
+	if(isect){ // set intersection
+		qp->intr=true;
+		qp->extr=false;
+		ic=poly_cross(pl, el1);
+		if(ic!=1) qp->intr=false; // intersection (AND)
+		if(ic==0) qp->extr=true; 
+
+		ic=poly_cross(pl, el2);
+		if(ic!=1) qp->intr=false; // intersection (AND)
+		if(ic==0) qp->extr=true; 
+	}else{	// set sum  (union)
+		qp->intr=false;
+		qp->extr=true;
+		ic=poly_cross(pl, el1);
+		if(ic==1) qp->intr=true; // union (OR)
+		if(ic!=0) qp->extr=false; 
+		ic=poly_cross(pl, el2);
+		if(ic==1) qp->intr=true; // union (OR)
+		if(ic!=0) qp->extr=false; 
+	};
+
+	qp->bndr=false;
+	if( !(qp->intr)){
+	       if(!(qp->extr)){
+		       qp->bndr=true;
+	       }
+	 }
+
+	int icrs=2;
+	if(qp->extr) icrs=0;
+	if(qp->intr) icrs=1;
+	if(qp->bndr) icrs=3;
+
+	if(lev >= lev_max){
+		(*count)++;
+		qp->icrs=icrs;
+		return(lev);
+	}
+
+	int i,j,k;
+	double Xa[2],Ya[2],Wd[2];
+	Wd[0]=qp->px.Wd[0]*0.5;
+	Wd[1]=qp->px.Wd[1]*0.5;
+	Xa[0]=qp->px.Xa[0];
+	Xa[1]=qp->px.Xa[1];
+	if(icrs>1){
+		k=0;
+		for(j=0; j<2; j++){
+			Ya[1]=Xa[1]+Wd[1]*j;
+		for(i=0; i<2; i++){
+			Ya[0]=Xa[0]+Wd[0]*i;
+			qp->chld[k]=new_QPatch(Ya,Wd);
+			qp->chld[k]->par=qp;
+			qp->chld[k]->lev=lev+1;
+			Qtree(qp->chld[k], el1,el2,isect, count,lev_max);
+			k++;
+		}
+		}
+	}else{
+		(*count)++;
+		qp->icrs=icrs;
+		//qp->draw();
+	};
+	return(qp->lev);
+};
+//---------------------------------------------------------------
 int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 
 	int i,j,k,icrs;
@@ -344,7 +474,6 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 			init=true;
 		}
 		if(bbox_cross(sld.els[i].bbox,qp->px)){
-		//if(true){
 			ic=poly_cross(pl, sld.els[i]);
 			if(ic==1) qp->intr=true; // union (OR)
 			if(ic!=0) qp->extr=false; 
@@ -359,7 +488,6 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 	for(i=0;i<sld.nelp;i++){
 	if(sld.isect[i]){
 		if(bbox_cross(sld.els[i].bbox,qp->px)){
-		//if(true){
 			ic=poly_cross(pl, sld.els[i]);
 		}else{
 			ic=0;
@@ -418,6 +546,9 @@ Ellip::Ellip(){
 	xc[0]=0.0; xc[1]=0.0;
 	radi[0]=1.0; radi[1]=1.0;
 	phi=0.0;
+};
+double Ellip::area(){
+	return(radi[0]*radi[1]*4.0*atan(1.0));
 };
 void Ellip::set_bbox(){
 	double cosp=cos(phi);
