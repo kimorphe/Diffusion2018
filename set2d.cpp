@@ -66,6 +66,15 @@ Bbox bbox_union(Bbox b1, Bbox b2){
 	b3.set_Xb(xmax,ymax);
 	return(b3);
 };
+bool bbox_cross(Bbox bx, Pixel px){
+	double xmin=dmax(bx.Xa[0],px.Xa[0]);
+	double ymin=dmax(bx.Xa[1],px.Xa[1]);
+	double xmax=dmin(bx.Xb[0],px.Xb[0]);
+	double ymax=dmin(bx.Xb[1],px.Xb[1]);
+	if(xmax<xmin) return(false);
+	if(ymax<ymin) return(false);
+	return(true);
+};
 //-------------------------------------------------
 bool Circ :: isin(double *x){
 	double dist;
@@ -318,13 +327,10 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 	double Xa[2],Ya[2],Wd[2];
 
 	int lev=qp->lev;
-
-//	Ellip elp;
 	Poly pl;
 	pl.np=4;
 	pl.xs=qp->px.xs;
 	pl.ys=qp->px.ys;
-
 	int ic;
 	bool init=false;
 
@@ -337,9 +343,12 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 			qp->extr=true;
 			init=true;
 		}
-		ic=poly_cross(pl, sld.els[i]);
-		if(ic==1) qp->intr=true; // union (OR)
-		if(ic!=0) qp->extr=false; 
+		if(bbox_cross(sld.els[i].bbox,qp->px)){
+		//if(true){
+			ic=poly_cross(pl, sld.els[i]);
+			if(ic==1) qp->intr=true; // union (OR)
+			if(ic!=0) qp->extr=false; 
+		}
 		isum++;
 	}
 	// Tile intersection of all sets (particles)
@@ -348,11 +357,16 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 		qp->extr=false;
 	}
 	for(i=0;i<sld.nelp;i++){
-		if(sld.isect[i]){
-		ic=poly_cross(pl, sld.els[i]);
-		if(ic!=1) qp->intr=false; // intersection (AND)
-		if(ic==0) qp->extr=true; 
+	if(sld.isect[i]){
+		if(bbox_cross(sld.els[i].bbox,qp->px)){
+		//if(true){
+			ic=poly_cross(pl, sld.els[i]);
+		}else{
+			ic=0;
 		}
+			if(ic!=1) qp->intr=false; // intersection (AND)
+			if(ic==0) qp->extr=true; 
+	}
 	}
 
 	qp->bndr=false;
@@ -362,44 +376,10 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 	       }
 	 }
 
-/*
-	bool set_or=false;
-	qp->intr=true;
-	qp->extr=false;
-	for(i=0;i<sld.nelp;i++){
-		elp=sld.els[i];
-		ic=poly_cross(pl, elp);
-		if(ic==0) qp->extr=true; // ~intersection (exclusive OR)
-		if(ic==1) set_or=true;	//  union (OR)
-		if(ic!=1) qp->intr=false; // intersection (AND)
-		if(ic==3){
-		       	qp->bndr=true;  // detect all boundary
-			nbnd++;
-		}
-	};
-*/
-
 	icrs=2;
 	if(qp->extr) icrs=0;
 	if(qp->intr) icrs=1;
 	if(qp->bndr) icrs=3;
-//	if(qp->bndr && !set_or) qp->bndr=false;
-//	if(nbnd==sld.nelp) qp->bndr=true;
-/*
-	if(set_or){
-	       qp->intr=true;
-	       icrs=1;
-	}
-	if(qp->bndr){
-		if(set_or){
-			qp->bndr=false;
-			icrs=1;
-		}else{
-			icrs=3;
-		}	
-	};
-*/
-
 
 	if(lev >= lev_max){
 		(*count)++;
@@ -704,6 +684,20 @@ int poly_cross(Poly A, Ellip B){
 	//Ad.draw("temp.dat","a");
 
 	return(poly_cross(Ad,Bd));
+};
+Solid::Solid(){};
+Solid::Solid(int n){
+	nelp=n;
+	els=(Ellip *)malloc(sizeof(Ellip)*nelp);
+	isect=(bool *)malloc(sizeof(bool)*nelp);
+};
+void Solid::draw(char fn[128],int ndat){
+	char md[3];
+	for(int i=0;i<nelp;i++){
+		sprintf(md,"a");
+		if(i==0) sprintf(md,"w");
+		els[i].draw(fn,ndat,md);
+	}
 };
 #if DB==5	//  testing bounding box
 int main(){

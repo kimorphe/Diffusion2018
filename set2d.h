@@ -87,6 +87,7 @@ class Pixel{
 	protected:
 };
 //---------------------------------------------------
+bool bbox_cross(Bbox b1, Pixel px);
 int is_cross(Pixel px, Circ cr);
 void translate_crs(int icrs);
 //---------------------------------------------------

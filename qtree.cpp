@@ -16,20 +16,6 @@ class Solid{
 	protected:
 };
 */
-Solid::Solid(){};
-Solid::Solid(int n){
-	nelp=n;
-	els=(Ellip *)malloc(sizeof(Ellip)*nelp);
-	isect=(bool *)malloc(sizeof(bool)*nelp);
-};
-void Solid::draw(char fn[128],int ndat){
-	char md[3];
-	for(int i=0;i<nelp;i++){
-		sprintf(md,"a");
-		if(i==0) sprintf(md,"w");
-		els[i].draw(fn,ndat,md);
-	}
-};
 #if DB==3	// measuring area
 int main(){
 	Solid SLD(3);
@@ -51,9 +37,9 @@ int main(){
 	SLD.els[1].xc[1]+=0.5;
 
 	SLD.els[2]=SLD.els[0];
-	SLD.els[2].set_phi(-20.0);
-	SLD.els[2].xc[0]+=0.0;
-	SLD.els[2].xc[1]-=0.5;
+	SLD.els[2].set_phi(-90.0);
+	SLD.els[2].xc[0]-=0.75;
+	SLD.els[2].xc[1]-=0.35;
 
 	SLD.els[0].set_bbox();
 	SLD.els[1].set_bbox();
