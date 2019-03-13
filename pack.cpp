@@ -15,7 +15,7 @@ int main(){
 	std::mt19937 mt(rd());
 	std::uniform_real_distribution<double> RndR(0.0,1.0);
 	double PI=4.0*atan(1.0);
-	int i,np=100;
+	int i;
 	double x,y;
 	double ra,rb,aspect=0.6;
 	double phi;
@@ -24,21 +24,6 @@ int main(){
 	Xa[0]=-1.0; Xa[1]=-1.0;
 	Xb[0]=1.0; Xb[1]=1.0;
 	Wd[0]=1.0; Wd[1]=1.0;
-	Solid sld(np);
-
-	for(i=0;i<np;i++){
-		x=RndR(mt)*Wd[0];	
-		y=RndR(mt)*Wd[1];	
-		ra=0.1*Wd[0];
-		rb=ra*aspect;
-		phi=RndR(mt)*PI;
-		//printf("x,y=%lf %lf, phi=%lf[deg]\n",x,y,phi/PI*180.0);
-		sld.els[i].set_xc(x,y);
-		sld.els[i].phi=phi;
-		sld.els[i].set_radi(ra,rb);
-		sld.isect[i]=false;
-		sld.els[i].set_bbox();
-	};
 
 	Ellip el1,el2;
 	el1.set_xc(0.0,-0.5);
@@ -54,7 +39,7 @@ int main(){
 	printf("A2=%lf\n",el2.area());
 
 	bool isect=false;
-	int lev_max=7;
+	int lev_max=6;
 	double S=area(el1,el2,lev_max,isect);
 	printf("A=%lf, err=%lf\n",S,S-el1.area()-el2.area());
 
@@ -91,6 +76,8 @@ int main(){
 	for(int i=0;i<count;i++){
 		if(qp_leaves[i].bndr) qp_leaves[i].draw(fname,mode);
 	}
+
+	clear_Qtree(&qp0);
 
 	return(0);
 };

@@ -253,6 +253,9 @@ QPatch::QPatch(){
 	bndr=false; intr=false; extr=false;
 	for(int i=0;i<4;i++) chld[i]=NULL;
 };
+QPatch::~QPatch(){
+	//printf("QPatch destructed\n");
+};
 void QPatch::print(){
 	px.print();
 };
@@ -372,7 +375,18 @@ double area(Ellip el1, Ellip el2, int lev_max, bool isect){
 		if(qp_leaves[i].intr) S+=ds[lev];
 		if(qp_leaves[i].bndr) S+=(0.5*ds[lev]);
 	};
+	free(qp_leaves);
 	return(S);
+};
+void clear_Qtree(QPatch *qp){
+	QPatch *par;
+	if(qp->chld[0]!=NULL){
+		for(int i=0;i<4;i++){
+			clear_Qtree(qp->chld[i]);
+			//printf("lev=%d\n",qp->lev);
+			free(qp->chld[i]);
+		};
+	};
 };
 
 int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max){

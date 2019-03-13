@@ -112,6 +112,7 @@ class QPatch{
 		QPatch *par;	// parent
 		QPatch *chld[4]; // children
 		QPatch();	// default constructor
+		~QPatch();	// destructor
 		void print();	// 
 		void draw(char fn[128],char mode[3]);
 		void draw();
@@ -130,6 +131,7 @@ int Qtree(QPatch *qp, Circ cr,int *count);
 int Qtree(QPatch *qp, Solid sld,int *count, int lev_max);
 int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max);
 double area(Ellip el1, Ellip el2, int lev_max, bool isect);
+void clear_Qtree(QPatch *qp);
 
 class Poly{
 	public:
