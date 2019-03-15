@@ -1,6 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <random>
+#ifndef __TCNTRL__
+	#define __TCNTRL__
+	#include "tcntrl.h"
+#endif
+using namespace std;
 
 //--------------Bounding Box  Class--------------------
 class Bbox{
@@ -11,6 +17,7 @@ class Bbox{
 	void set_Xa(double x, double y);
 	void set_Xb(double x, double y);
 	void set_Wd();
+	void setup(double xa[2], double xb[2]);
 	void draw();
 	void draw(char fn[128],char mode[3]);
 	private:
@@ -60,6 +67,7 @@ class Ellip{
 		void set_radi(double r1,double r2);
 		void set_phi(double ang);
 		void scale(double s);
+		void slide(double ux,double uy, Bbox unit_cell );
 		Bbox bbox;	// bounding box
 		void set_bbox();	// set bounding box
 		bool is_in(double xf[2]);
@@ -79,6 +87,7 @@ class Pixel{
 		double rmax,rmin;
 		void print();
 		void draw(char fn[128],char mode[3]);
+		void draw(FILE *fp);
 		void draw();
 		void set_Xa(double xa,double ya);
 		void set_Xb(double xb,double yb);
@@ -86,6 +95,7 @@ class Pixel{
 		bool ready;
 		bool is_in;
 		void setup();
+		double area();
 		Pixel();
 	private:
 	protected:
@@ -102,7 +112,15 @@ class Solid{
 		Ellip *els;
 		Solid();
 		Solid(int n);
+		Solid(int n, double Wd[2]);
 		void draw(char fn[128],int ndat);
+		Bbox bbox;
+		double perturb(int p, double ux, double uy, double dphi);
+		double MC(Temp_Hist TH);
+		void init_rand(int seed);
+		std::mt19937_64 mt;	// random number generator
+		std::uniform_real_distribution<> Urnd;
+		std::normal_distribution<> Grnd;
 	private:
 	protected:
 };
@@ -115,6 +133,7 @@ class QPatch{
 		~QPatch();	// destructor
 		void print();	// 
 		void draw(char fn[128],char mode[3]);
+		void draw(FILE *fp);
 		void draw();
 		int lev;
 		int icrs;	//  0:exterior/ 1:interior/ 2:inclusive/ 3:boundary pixel
@@ -132,7 +151,22 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max);
 int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max);
 double area(Ellip el1, Ellip el2, int lev_max, bool isect);
 void clear_Qtree(QPatch *qp);
-
+class Tree4{
+	public:
+		Tree4();
+		QPatch qp0;	// Root node
+		bool isect;	// true:intersection, false:union
+		bool ready;	// Has tree been build already?
+		int lev_max;	// deepest level
+		int n_leaves;	// number of leaves
+		void setup(Ellip elp1, Ellip elp2, bool set_opr, int Lev_Max);
+		void setup(Solid sld, int Lev_Max);
+		QPatch *leaves;
+		void draw();
+		void clean();
+		double area();
+	private:
+};
 class Poly{
 	public:
 		int np;	

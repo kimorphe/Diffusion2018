@@ -16,6 +16,13 @@ void Bbox::set_Wd(){
 	Wd[0]=Xb[0]-Xa[0];
 	Wd[1]=Xb[1]-Xa[1];
 };
+void Bbox::setup(double xa[2], double xb[2]){
+	for(int i=0;i<2;i++){
+		Xa[i]=xa[i];
+		Xb[i]=xb[i];
+		Wd[i]=Xb[i]-Xa[i];
+	}
+};
 void Bbox::draw(char fn[128],char mode[3]){
 	FILE *fp=fopen(fn,mode);
 
@@ -137,6 +144,13 @@ void Pixel::draw(char fn[128],char mode[3]){
 	fprintf(fp,"\n");
 	fclose(fp);
 };
+void Pixel::draw(FILE *fp){
+	if(~ready) Pixel::setup();
+	for(int i=0;i<5;i++){
+		fprintf(fp,"%lf %lf\n",xs[i%4],ys[i%4]);
+	};
+	fprintf(fp,"\n");
+};
 void Pixel::draw(){
 	if(~ready) Pixel::setup();
 	for(int i=0;i<5;i++){
@@ -229,6 +243,10 @@ double Pixel::dist2pt(double px, double py){
 	}
 	return(rmin);
 };
+double Pixel::area(){
+	if(!ready) Pixel::setup();
+	return(Wd[0]*Wd[1]);	
+};
 //---------------------------------------------------
 int is_cross(Pixel px, Circ cr){
 	double rmin,rmax;
@@ -261,6 +279,9 @@ void QPatch::print(){
 };
 void QPatch::draw(char fn[128],char mode[3]){
 	px.draw(fn,mode);
+};
+void QPatch::draw(FILE *fp){
+	px.draw(fp);
 };
 void QPatch::draw(){
 	px.draw();
@@ -385,7 +406,13 @@ void clear_Qtree(QPatch *qp){
 			clear_Qtree(qp->chld[i]);
 			//printf("lev=%d\n",qp->lev);
 			free(qp->chld[i]);
+			qp->chld[i]=NULL;
 		};
+		qp->intr=false;
+		qp->bndr=false;
+		qp->extr=false;
+		qp->lev=0;
+		qp->icrs=0;	
 	};
 };
 
@@ -529,7 +556,6 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 		return(lev);
 	}
 
-
 	//translate_crs(icrs);
 	Wd[0]=qp->px.Wd[0]*0.5;
 	Wd[1]=qp->px.Wd[1]*0.5;
@@ -555,7 +581,101 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 	};
 	return(qp->lev);
 };
+//---------------------------------------------------------
+void Tree4::setup(Ellip el1, Ellip el2, bool set_opr, int LevMax){
 
+	int count;
+	lev_max=LevMax;
+	isect=set_opr;
+
+	count=0;
+	el1.set_bbox();
+	el2.set_bbox();
+	Bbox bx;
+	if(isect){
+		bx=bbox_cross(el1.bbox,el2.bbox);
+	}else{
+		bx=bbox_union(el1.bbox,el2.bbox);
+	};
+	qp0.set_lim(bx.Xa, bx.Xb);
+	Qtree(&qp0,el1,el2,isect,&count,lev_max);
+	n_leaves=count;
+
+	leaves=(QPatch *)malloc(sizeof(QPatch)*n_leaves);
+	count=0;
+	gather_leaves(&qp0,&count,leaves);
+	ready=true;
+};
+void Tree4::setup(Solid sld,int LevMax){
+
+	int count;
+	lev_max=LevMax;
+	count=0;
+
+	qp0.set_lim(sld.bbox.Xa,sld.bbox.Xb);
+	Qtree(&qp0,sld,&count,lev_max);
+	n_leaves=count;
+
+	leaves=(QPatch *)malloc(sizeof(QPatch)*n_leaves);
+	count=0;
+	gather_leaves(&qp0,&count,leaves);
+	ready=true;
+
+};
+Tree4::Tree4(){
+	lev_max=0;
+	isect=true;
+	ready=false;
+};
+void Tree4::draw(){
+	int i;
+	char mode[3]="a";
+	char fni[128],fnb[128],fne[128];
+	FILE *fp1,*fp2,*fp3;
+
+	if(!ready){
+		printf("Tree strcuture has yet to been build");
+	}else{
+		sprintf(fni,"qtree_in.out");
+		sprintf(fnb,"qtree_bnd.out");
+		sprintf(fne,"qtree_ex.out");
+		fp1=fopen(fni,"w");
+		fp2=fopen(fnb,"w");
+		fp3=fopen(fne,"w");
+		for(i=0;i<n_leaves;i++){
+			if(leaves[i].intr) leaves[i].draw(fp1);
+			if(leaves[i].bndr) leaves[i].draw(fp2);
+			if(leaves[i].extr) leaves[i].draw(fp3);
+		}
+		fclose(fp1);
+		fclose(fp2);
+		fclose(fp3);
+	};
+};
+double Tree4::area(){
+	int i,lev;
+	double S=0.0;
+	double ds0=qp0.px.area();
+	double *ds=(double *)malloc(sizeof(double)*(lev_max+1));
+	ds[0]=ds0;
+	for(i=1;i<=lev_max;i++) ds[i]=ds[i-1]*0.25;
+	for(i=0;i<n_leaves;i++){
+		if(leaves[i].extr) continue;
+		lev=leaves[i].lev;	
+		if(leaves[i].intr) S+=ds[lev];
+		if(leaves[i].bndr) S+=(0.5*ds[lev]);
+	};
+	free(ds);
+	return(S);
+};
+void Tree4::clean(){
+	if(ready){
+		clear_Qtree(&qp0);
+		free(leaves);
+		ready=false;
+	};
+};
+//---------------------------------------------------------
 Ellip::Ellip(){
 	xc[0]=0.0; xc[1]=0.0;
 	radi[0]=1.0; radi[1]=1.0;
@@ -582,6 +702,21 @@ void Ellip::set_bbox(){
 void Ellip::scale(double s){
 	radi[0]*=s;
 	radi[1]*=s;
+};
+void Ellip::slide(double ux, double uy, Bbox unit_cell){
+	xc[0]+=ux;
+	xc[1]+=uy;
+
+	double *Xa=unit_cell.Xa;
+	double *Xb=unit_cell.Xb;
+	double *Wd=unit_cell.Wd;
+
+	while( xc[0] < Xa[0]) xc[0]+=Wd[0];
+	while( xc[1] < Xa[1]) xc[1]+=Wd[1];
+	while( xc[0] > Xb[0]) xc[0]-=Wd[0];
+	while( xc[1] > Xb[1]) xc[1]-=Wd[1];
+
+	Ellip::set_bbox();
 };
 void Ellip::draw(int np){
 	double dth=8.0*atan(1.0)/np;
@@ -830,11 +965,46 @@ int poly_cross(Poly A, Ellip B){
 
 	return(poly_cross(Ad,Bd));
 };
-Solid::Solid(){};
+Solid::Solid(){
+	Solid::init_rand(-1);
+};
 Solid::Solid(int n){
 	nelp=n;
 	els=(Ellip *)malloc(sizeof(Ellip)*nelp);
 	isect=(bool *)malloc(sizeof(bool)*nelp);
+	Solid::init_rand(-1);
+};
+Solid::Solid(int n, double Wd[2]){
+
+	nelp=n;
+	els=(Ellip *)malloc(sizeof(Ellip)*nelp);
+	isect=(bool *)malloc(sizeof(bool)*nelp);
+	Solid::init_rand(-1);
+
+	double Xa[2],Xb[2];
+	Xa[0]=0.0; Xa[1]=0.0;	
+	Xb[0]=Xa[0]+Wd[0];
+	Xb[1]=Xa[1]+Wd[1];
+	bbox.setup(Xa,Xb);
+
+	double x,y,phi;
+	double PI=4.0*atan(1.0);
+	double r0=Wd[0]*0.03,aspect=0.6;
+
+	for(int i=0;i<nelp;i++){
+		x=Urnd(mt)*Wd[0]+Xa[0];
+		y=Urnd(mt)*Wd[1]+Xa[1];
+		els[i].set_xc(x,y);
+		els[i].phi=Urnd(mt)*PI;
+		els[i].set_radi(r0,r0*aspect);
+		isect[i]=false;
+		els[i].set_bbox();
+	};
+};
+void Solid::init_rand(int seed){
+	mt=std::mt19937_64(seed);
+	Urnd=std::uniform_real_distribution<double>(0.0,1.0); // Uniform distribution(min,max)
+	Grnd=std::normal_distribution<double>(0.0,1.0); // Normal distribution(mean,stdev)	
 };
 void Solid::draw(char fn[128],int ndat){
 	char md[3];
@@ -844,6 +1014,63 @@ void Solid::draw(char fn[128],int ndat){
 		els[i].draw(fn,ndat,md);
 	}
 };
+double Solid::MC(Temp_Hist TH){
+	int ip;
+	double ux,uy,dphi;
+	double PI=4.0*atan(1.0);
+	double dE;
+	for(ip=0; ip<nelp; ip++){
+		ux=2.*(Urnd(mt)-0.5)*bbox.Wd[0]*0.5;
+		uy=2.*(Urnd(mt)-0.5)*bbox.Wd[1]*0.5;
+		dphi=PI*Urnd(mt);
+	       	dE=perturb(ip,ux,uy,dphi);
+		printf("%d dE=%lf\n",ip,dE);
+	}
+	return(0.0);
+};
+double Solid::perturb(int p, double ux, double uy, double dphi){
+
+	int q,lev_max=6;
+	bool pq;
+	Ellip elp=els[p];
+	Ellip elq,elr;
+	double dEp=0.0,dEm=0.0,S=0.0;
+
+	Tree4 tr4;
+	for(q=0; q<nelp; q++){
+		if(q==p) continue;
+		pq=bbox_cross(elp,els[q]);
+		if(pq){
+			elq=els[q];
+			tr4.setup(elp,elq,true,lev_max);
+			S=tr4.area();
+			tr4.clean();
+			dEm+=S;
+		}
+	}	
+
+	elr=elp;	// copy p-th ellipse before perturbation
+	//printf("xc=%lf %lf -->",elr.xc[0],elr.xc[1]);
+	elr.phi+=dphi;
+	elr.slide(ux,uy,bbox); 
+	//printf("xc=%lf %lf\n",elr.xc[0],elr.xc[1]);
+
+	S=0.0;
+	for(q=0; q<nelp; q++){
+		if(q==p) continue;
+		pq=bbox_cross(elr,els[q]);
+		if(pq){
+			elq=els[q];
+			tr4.setup(elr,elq,true,lev_max);
+			S=tr4.area();
+			tr4.clean();
+			dEp+=S;
+		}
+	}	
+	//printf("dE=%lf (dEp,dEm)=%lf %lf\n",dEp-dEm,dEp,dEm);
+	return(dEp-dEm);
+};
+
 #if DB==5	//  testing bounding box
 int main(){
 	Ellip el;

@@ -1,32 +1,48 @@
-#define DB 1
+#define DB 0
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <random>
 #include "set2d.h"
+#ifndef __TCNTRL__
+	#define _TCNTRL
+	#include "tcntrl.h"
+#endif
 
 using namespace std;
 
-
-#if DB==1
+#if DB==0
 int main(){
-	std::random_device rd;
-	std::mt19937 mt(rd());
-	std::uniform_real_distribution<double> RndR(0.0,1.0);
-	double PI=4.0*atan(1.0);
-	int i;
-	double x,y;
-	double ra,rb,aspect=0.6;
-	double phi;
-	double Wd[2],Xa[2],Xb[2];
+	//std::uniform_real_distribution<double> RndR;
+	//RndR=uniform_real_distribution<double>(0.0,1.0);
+	Temp_Hist TH;
+	char fnt[128]="temp_hist.inp";
+	TH.load(fnt);
 
-	Xa[0]=-1.0; Xa[1]=-1.0;
-	Xb[0]=1.0; Xb[1]=1.0;
-	Wd[0]=1.0; Wd[1]=1.0;
+	int np=500;
+	double Wd[2]={1.0,1.0};
+	char fn[128]="geom.dat";
+	Solid sld(np,Wd);
+	sld.draw(fn,50);
+	sld.MC(TH);
+
+	Tree4 tr4;
+	tr4.setup(sld,9);
+	tr4.draw();
+	tr4.clean();
+	return(0);
+};
+#endif
+
+
+#if DB==1	
+// checking area(el1,el2,levmax,isect)
+// Introducing Tree4 class with which quad-tree based quadrature can be done 
+int main(){
 
 	Ellip el1,el2;
-	el1.set_xc(0.0,-0.5);
+	el1.set_xc(0.0,-0.0);
 	el1.set_radi(1.0,0.5);
 	el1.set_phi(0.0);
 	el1.set_bbox();
@@ -38,54 +54,31 @@ int main(){
 	el2.set_bbox();
 	printf("A2=%lf\n",el2.area());
 
-	bool isect=false;
+	bool isect=true;
 	int lev_max=6;
 	double S=area(el1,el2,lev_max,isect);
 	printf("A=%lf, err=%lf\n",S,S-el1.area()-el2.area());
 
-	Bbox bx;	
-	if(isect){
-		bx=bbox_cross(el1.bbox,el2.bbox);
-	}else{
-		bx=bbox_union(el1.bbox,el2.bbox);
-	}
+	Tree4 tr4;
+	tr4.setup(el1,el2,isect,lev_max);
+	tr4.draw();
+	printf("A=%lf\n",tr4.area());
+	tr4.clean();
 
-	QPatch qp0;
-	qp0.set_lim(bx.Xa,bx.Xb);
-	int count=0;
-	Qtree(&qp0,el1,el2,isect,&count,lev_max);
-	printf("count=%d\n",count);
-	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);
-	count=0;
-	gather_leaves(&qp0,&count,qp_leaves);
+	char fname[128]="geom.dat",md[3]="w";	
+	el1.draw(fname,100,md);
+	sprintf(md,"a");	
+	el2.draw(fname,100,md);
 
-	char mode[3]="w",fname[128];
-	sprintf(fname,"qtree_in.out");
-	el1.draw(fname,100,mode);
-	sprintf(mode,"a");
-	el2.draw(fname,100,mode);
-	for(int i=0;i<count;i++){
-		if(qp_leaves[i].intr) qp_leaves[i].draw(fname,mode);
-	}
-
-	sprintf(fname,"qtree_bnd.out");
-	sprintf(mode,"w");
-	el1.draw(fname,100,mode);
-	sprintf(mode,"a");
-	el2.draw(fname,100,mode);
-	for(int i=0;i<count;i++){
-		if(qp_leaves[i].bndr) qp_leaves[i].draw(fname,mode);
-	}
-
-	clear_Qtree(&qp0);
 
 	return(0);
 };
 #endif
-#if DB==0
+#if DB==2
 int main(){
 	std::random_device rd;
-	std::mt19937 mt(rd());
+	//std::mt19937 mt(rd());
+	std::mt19937_64 mt(-1);
 	std::uniform_real_distribution<double> RndR(0.0,1.0);
 
 	char fn[128]="log.txt";
@@ -116,56 +109,63 @@ int main(){
 		sld.els[i].set_bbox();
 	};
 
+	sprintf(fn,"geom.dat");
+	sld.draw(fn,50);
+
 	int q,p=int(RndR(mt)*np);
 	bool pq;
-	Ellip ep=sld.els[p];
-	ep.draw(50);
-	ep.bbox.draw();
+	Ellip elp=sld.els[p],elq;
+	//elp.draw(50);
+	//ep.bbox.draw();
+	double dE=0.0,S=0.0;
+	Tree4 tr4;
 	for(q=0;q<np;q++){
-		pq=bbox_cross(ep,sld.els[q]);
+		if(q==p) continue;
+		pq=bbox_cross(elp,sld.els[q]);
 		if(pq){
-		       	//sld.els[q].draw(50);
-		       	sld.els[q].bbox.draw();
+			elq=sld.els[q];
+		       	//elq.draw(50);
+		       	//sld.els[q].bbox.draw();
+			tr4.setup(elp,elq,true,6);
+			S=tr4.area();
+			tr4.clean();
+			printf("S=%lf\n",S);
+			dE+=S;
 		}
 	}	
+	printf("dE=%lf\n",dE);
 
-
-	double Xa[2];
-	Xa[0]=0.0;
+	double Xa[2],Xb[2];
+	Xa[0]=0.0; 
 	Xa[1]=0.0;
-	QPatch qp0;
-	qp0.set_lim(Xa,Wd);
-	int count=0;
+	Xb[0]=Xa[0]+Wd[0];
+	Xb[1]=Xa[1]+Wd[1];
+	sld.bbox.setup(Xa,Xb);
 
-	int lev_max=8;
-	Qtree(&qp0,sld,&count,lev_max);
-	printf("number of leaves =%d\n",count);
+	Ellip elr=elp;
+	printf("xc=%lf %lf -->",elr.xc[0],elr.xc[1]);
+	double ux,uy;
+	ux=RndR(mt)-0.45;
+	uy=RndR(mt)-0.15;
+	elr.slide(ux,uy,sld.bbox);
+	printf("xc=%lf %lf\n",elr.xc[0],elr.xc[1]);
 
-	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);
-	count=0;
-	gather_leaves(&qp0,&count,qp_leaves);
+	dE=0.0; S=0.0;
+	for(q=0;q<np;q++){
+		if(q==p) continue;
+		pq=bbox_cross(elr,sld.els[q]);
+		if(pq){
+			elq=sld.els[q];
+			tr4.setup(elr,elq,true,6);
+			S=tr4.area();
+			tr4.clean();
+			printf("S=%lf\n",S);
+			dE+=S;
+		}
+	}	
+	printf("dE=%lf\n",dE);
 
-	char fname[128];
-	sprintf(fname,"qtree_in.out");
-	sld.draw(fname,100);
-	sprintf(mode,"a");
-	for(int i=0;i<count;i++){
-		if(qp_leaves[i].intr) qp_leaves[i].draw(fname,mode);
-	}
-
-	sprintf(fname,"qtree_bnd.out");
-	sld.draw(fname,100);
-	for(int i=0;i<count;i++){
-		if(qp_leaves[i].bndr) qp_leaves[i].draw(fname,mode);
-	}
-
-	sprintf(fname,"qtree.out");
-	sld.draw(fname,100);
-	sprintf(mode,"a");
-	for(int i=0;i<count;i++){
-		qp_leaves[i].draw(fname,mode);
-	}
-
+	sld.perturb(p,ux,uy,0.0);
 
 	return(0);
 };
