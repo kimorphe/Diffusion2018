@@ -1,4 +1,4 @@
-#define DB 0
+#define DB 3
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,9 +21,12 @@ int main(){
 	Solid sld(np,Wd);
 	sld.draw(fn,50);
 	Tree4 tr;
-	tr.setup(sld.els,sld.nelp,false,9);
-	tr.draw();
-	tr.clean();
+
+	for(int i=0;i<10000;i++){
+		tr.setup(sld.els,sld.nelp,false,12);
+		tr.draw();
+		tr.clean();
+	};
 
 	int lev_max=9;
 	printf("S=%lf\n",sld.area(lev_max));
