@@ -1,7 +1,7 @@
 #define DB 0
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+//#include <math.h>
 #include "vec2.h"
 #include "set2d.h"
 
@@ -377,7 +377,6 @@ double area(Ellip el1, Ellip el2, int lev_max, bool isect){
 	qp0.set_lim(bx.Xa,bx.Xb);
 	int count=0;
 	Qtree(&qp0,el1,el2,isect,&count,lev_max);
-	printf("count=%d\n",count);
 	QPatch *qp_leaves=(QPatch *)malloc(sizeof(QPatch)*count);
 	count=0;
 	gather_leaves(&qp0,&count,qp_leaves);
@@ -417,7 +416,6 @@ void clear_Qtree(QPatch *qp){
 };
 
 int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max){
-
 
 	int lev=qp->lev;
 	Poly pl;
@@ -488,6 +486,84 @@ int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max)
 		(*count)++;
 		qp->icrs=icrs;
 		//qp->draw();
+	};
+	return(qp->lev);
+};
+int Qtree(QPatch *qp, Ellip *els,int nelp, bool isect, int *count, int lev_max){
+
+	int lev=qp->lev;
+	Poly pl;
+	pl.np=4;
+	pl.xs=qp->px.xs;
+	pl.ys=qp->px.ys;
+
+//	printf("lev,lev_max=%d/%d\n",lev,lev_max);
+	int ic,i;
+	if(isect){ // set intersection
+		qp->intr=true;
+		qp->extr=false;
+		for(i=0; i<nelp; i++){
+			if(bbox_cross(els[i].bbox,qp->px)){
+				ic=poly_cross(pl, els[i]);
+			}else{
+				ic=0;
+			};
+			if(ic!=1) qp->intr=false; // intersection (AND)
+			if(ic==0) qp->extr=true; 
+		}
+
+	}else{	// set sum  (union)
+		qp->intr=false;
+		qp->extr=true;
+		for(i=0; i<nelp; i++){
+			if(bbox_cross(els[i].bbox,qp->px)){
+				ic=poly_cross(pl, els[i]);
+				if(ic==1) qp->intr=true; // union (OR)
+				if(ic!=0) qp->extr=false; 
+			}
+		}
+	};
+
+	qp->bndr=false;
+	if( !(qp->intr)){
+	       if(!(qp->extr)){
+		       qp->bndr=true;
+	       }
+	 }
+
+	int icrs=2;
+	if(qp->extr) icrs=0;
+	if(qp->intr) icrs=1;
+	if(qp->bndr) icrs=3;
+
+	if(lev >= lev_max){
+		(*count)++;
+		qp->icrs=icrs;
+		return(lev);
+	}
+
+	int j,k;
+	double Xa[2],Ya[2],Wd[2];
+	Wd[0]=qp->px.Wd[0]*0.5;
+	Wd[1]=qp->px.Wd[1]*0.5;
+	Xa[0]=qp->px.Xa[0];
+	Xa[1]=qp->px.Xa[1];
+	if(icrs>1){
+		k=0;
+		for(j=0; j<2; j++){
+			Ya[1]=Xa[1]+Wd[1]*j;
+		for(i=0; i<2; i++){
+			Ya[0]=Xa[0]+Wd[0]*i;
+			qp->chld[k]=new_QPatch(Ya,Wd);
+			qp->chld[k]->par=qp;
+			qp->chld[k]->lev=lev+1;
+			Qtree(qp->chld[k], els,nelp,isect, count,lev_max);
+			k++;
+		}
+		}
+	}else{
+		(*count)++;
+		qp->icrs=icrs;
 	};
 	return(qp->lev);
 };
@@ -597,6 +673,7 @@ void Tree4::setup(Ellip el1, Ellip el2, bool set_opr, int LevMax){
 	}else{
 		bx=bbox_union(el1.bbox,el2.bbox);
 	};
+
 	qp0.set_lim(bx.Xa, bx.Xb);
 	Qtree(&qp0,el1,el2,isect,&count,lev_max);
 	n_leaves=count;
@@ -606,6 +683,32 @@ void Tree4::setup(Ellip el1, Ellip el2, bool set_opr, int LevMax){
 	gather_leaves(&qp0,&count,leaves);
 	ready=true;
 };
+void Tree4::setup(Ellip *els, int nelp, bool set_opr, int LevMax){
+
+	int i,count;
+	lev_max=LevMax;
+	count=0;
+	isect=set_opr;
+
+
+	for(i=0;i<nelp;i++) els[i].set_bbox();
+	Bbox bx=els[0].bbox;
+	if(isect){
+		for(i=1;i<nelp;i++) bx=bbox_cross(bx,els[i].bbox);
+	}else{
+		for(i=1;i<nelp;i++) bx=bbox_union(bx,els[i].bbox);
+	}
+
+	qp0.set_lim(bx.Xa, bx.Xb);
+	Qtree(&qp0,els,nelp,isect,&count,lev_max);
+	n_leaves=count;
+
+	leaves=(QPatch *)malloc(sizeof(QPatch)*n_leaves);
+	count=0;
+	gather_leaves(&qp0,&count,leaves);
+	ready=true;
+
+}
 void Tree4::setup(Solid sld,int LevMax){
 
 	int count;
@@ -1015,18 +1118,34 @@ void Solid::draw(char fn[128],int ndat){
 	}
 };
 double Solid::MC(Temp_Hist TH){
+	double PI=4.0*atan(1.0);
 	int ip;
 	double ux,uy,dphi;
-	double PI=4.0*atan(1.0);
-	double dE;
+	double dE,dE_sum=0.0;
+	double prb,alph,beta;
+	double tau=TH.tau();
+	double a1=1.0, a2=0.1;
+	alph=(1.-tau)*a1+tau*a2;	// a1 --> a2
+	beta=(1.-tau)*1.0+tau*0.5;	// 1.0 --> 0.5 
 	for(ip=0; ip<nelp; ip++){
-		ux=2.*(Urnd(mt)-0.5)*bbox.Wd[0]*0.5;
-		uy=2.*(Urnd(mt)-0.5)*bbox.Wd[1]*0.5;
-		dphi=PI*Urnd(mt);
+		if(ip%100==0) printf("ip=%d\n",ip);
+		ux=0.0; uy=0.0; dphi=0.0;
+		if(ip %2==0){
+			ux=(2.*(Urnd(mt)-0.5)*bbox.Wd[0]*0.5 )*alph;
+			uy=(2.*(Urnd(mt)-0.5)*bbox.Wd[1]*0.5 )*alph;
+		}else{
+			dphi=PI*Urnd(mt)*beta;
+		};
 	       	dE=perturb(ip,ux,uy,dphi);
-		printf("%d dE=%lf\n",ip,dE);
+		prb=exp(-dE/TH.Temp);
+		if(prb>1.0) prb=1.0;
+		if(Urnd(mt) <=prb){	//accept
+			els[ip].phi+=dphi;
+			els[ip].slide(ux,uy,bbox); 
+			dE_sum+=dE;
+		};
 	}
-	return(0.0);
+	return(dE_sum);
 };
 double Solid::perturb(int p, double ux, double uy, double dphi){
 
@@ -1048,12 +1167,12 @@ double Solid::perturb(int p, double ux, double uy, double dphi){
 			dEm+=S;
 		}
 	}	
-
 	elr=elp;	// copy p-th ellipse before perturbation
 	//printf("xc=%lf %lf -->",elr.xc[0],elr.xc[1]);
 	elr.phi+=dphi;
 	elr.slide(ux,uy,bbox); 
 	//printf("xc=%lf %lf\n",elr.xc[0],elr.xc[1]);
+	//fflush(stdout);
 
 	S=0.0;
 	for(q=0; q<nelp; q++){
@@ -1069,6 +1188,23 @@ double Solid::perturb(int p, double ux, double uy, double dphi){
 	}	
 	//printf("dE=%lf (dEp,dEm)=%lf %lf\n",dEp-dEm,dEp,dEm);
 	return(dEp-dEm);
+};
+double Solid::area(int lev_max){
+	Tree4 tr4;
+	tr4.setup(els,nelp,false,lev_max);
+	double S=tr4.area();
+	tr4.clean();
+
+	double si=0.0;
+	int lev=lev_max-3;
+	if(lev <=1) lev=2;
+	for(int i=0;i<nelp;i++){
+		tr4.setup(els+i,1,false,lev);
+		si+=tr4.area();
+		tr4.clean();
+	};
+	printf("Overlap =%lf\n",si-S);
+	return(S);
 };
 
 #if DB==5	//  testing bounding box

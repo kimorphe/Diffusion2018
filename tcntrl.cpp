@@ -79,7 +79,10 @@ Temp_Hist::Temp_Hist(	// Constructor 2
 	cont_iteration=true;
 };
 double Temp_Hist::tau(){ // return normalized time
-	return(double(istep-1)/nstep);
+	// Note istep,nstep is UNSIGNED LONG, which can never be negative
+	//  substitution of a negative integer results in a huger positive integer
+	//return(double(istep-1)/nstep);
+	return(double(istep)/nstep);
 };
 double Temp_Hist::inc_Temp(){	// temperature control by a rational function 
 	Temp=1.0-pow((istep/(double)nstep),p);
@@ -116,5 +119,4 @@ int main(){
 
 	return(0);
 };
-
 #endif

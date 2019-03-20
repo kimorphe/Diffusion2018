@@ -12,6 +12,31 @@
 
 using namespace std;
 
+#if DB==3
+int main(){
+	int np=500;
+	double Wd[2]={1.0,1.0};
+	char fn[128]="geom0.dat";
+
+	Solid sld(np,Wd);
+	sld.draw(fn,50);
+	Tree4 tr;
+	tr.setup(sld.els,sld.nelp,false,9);
+	tr.draw();
+	tr.clean();
+
+	int lev_max=9;
+	printf("S=%lf\n",sld.area(lev_max));
+
+/*
+	Tree4 tr4;
+	tr4.setup(sld,9);
+	tr4.draw();
+	tr4.clean();
+*/
+};
+#endif
+
 #if DB==0
 int main(){
 	//std::uniform_real_distribution<double> RndR;
@@ -22,10 +47,22 @@ int main(){
 
 	int np=500;
 	double Wd[2]={1.0,1.0};
-	char fn[128]="geom.dat";
+	char fn[128]="geom0.dat";
+	double dE_tot=0.0,dE;
 	Solid sld(np,Wd);
 	sld.draw(fn,50);
-	sld.MC(TH);
+
+	sld.area(9);
+	while(TH.cont_iteration){
+		dE=sld.MC(TH);
+		dE_tot+=dE;
+		printf("dE=%lf\n",dE);
+		TH.inc_Temp();
+	};
+	printf("dE_tot=%lf\n",dE_tot);
+	sprintf(fn,"geom1.dat");
+	sld.draw(fn,50);
+	sld.area(9);
 
 	Tree4 tr4;
 	tr4.setup(sld,9);

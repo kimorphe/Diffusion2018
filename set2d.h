@@ -118,6 +118,7 @@ class Solid{
 		double perturb(int p, double ux, double uy, double dphi);
 		double MC(Temp_Hist TH);
 		void init_rand(int seed);
+		double area(int Lev_Max);
 		std::mt19937_64 mt;	// random number generator
 		std::uniform_real_distribution<> Urnd;
 		std::normal_distribution<> Grnd;
@@ -149,6 +150,7 @@ void gather_leaves(QPatch *qp_par, int *count, QPatch *qp_leaves);
 int Qtree(QPatch *qp, Circ cr,int *count);
 int Qtree(QPatch *qp, Solid sld,int *count, int lev_max);
 int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max);
+int Qtree(QPatch *qp, Ellip *els, int nelp, bool isect, int *count, int lev_max);
 double area(Ellip el1, Ellip el2, int lev_max, bool isect);
 void clear_Qtree(QPatch *qp);
 class Tree4{
@@ -160,6 +162,7 @@ class Tree4{
 		int lev_max;	// deepest level
 		int n_leaves;	// number of leaves
 		void setup(Ellip elp1, Ellip elp2, bool set_opr, int Lev_Max);
+		void setup(Ellip *els, int nelp,bool set_opr, int Lev_Max);
 		void setup(Solid sld, int Lev_Max);
 		QPatch *leaves;
 		void draw();
