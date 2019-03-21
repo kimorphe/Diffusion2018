@@ -1,4 +1,4 @@
-#define DB 3
+#define DB 0
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,18 +12,21 @@
 
 using namespace std;
 
-#if DB==3
+#if DB==3	// Debugging memory leak 
+// -->  memory block for Poly::xs,ys are not freed 
 int main(){
 	int np=500;
 	double Wd[2]={1.0,1.0};
 	char fn[128]="geom0.dat";
 
 	Solid sld(np,Wd);
-	sld.draw(fn,50);
-	Tree4 tr;
+//	sld.draw(fn,50);
 
-	for(int i=0;i<10000;i++){
-		tr.setup(sld.els,sld.nelp,false,12);
+	Tree4 tr;
+	for(int i=0;i<1;i++){
+		printf("i_try=%d\n",i);
+//		tr.setup(sld.els,sld.nelp,false,10);
+		tr.setup(sld,10);
 		tr.draw();
 		tr.clean();
 	};

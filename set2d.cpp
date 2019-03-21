@@ -302,6 +302,19 @@ QPatch *new_QPatch(double Xa[2], double Wd[2]){
 	for(int i=0;i<4;i++) qp->chld[i]=NULL;
 	return(qp);
 };
+void new_QPatch(double Xa[2], double Wd[2],QPatch **qp_new){
+	//QPatch *qp=(QPatch *)malloc(sizeof(QPatch));
+	QPatch *qp;
+	(*qp_new)=(QPatch *)malloc(sizeof(QPatch));
+	qp=(*qp_new);
+	double Xb[2];
+	Xb[0]=Xa[0]+Wd[0];
+	Xb[1]=Xa[1]+Wd[1];
+	qp->icrs=0;
+	qp->set_lim(Xa,Xb);
+	qp->bndr=false; qp->intr=false; qp->extr=false;
+	for(int i=0;i<4;i++) qp->chld[i]=NULL;
+};
 //--------------------------------------------------------
 void translate_crs(int icrs){
 
@@ -350,6 +363,7 @@ int Qtree(QPatch *qp, Circ cr,int *count){
 		for(i=0; i<2; i++){
 			Ya[0]=Xa[0]+Wd[0]*i;
 			qp->chld[k]=new_QPatch(Ya,Wd);
+			//new_QPatch(Ya,Wd,qp->chld[k]);
 			qp->chld[k]->par=qp;
 			qp->chld[k]->lev=lev+1;
 			Qtree(qp->chld[k], cr, count);
@@ -396,6 +410,8 @@ double area(Ellip el1, Ellip el2, int lev_max, bool isect){
 		if(qp_leaves[i].bndr) S+=(0.5*ds[lev]);
 	};
 	free(qp_leaves);
+	free(ds);
+	clear_Qtree(&qp0);
 	return(S);
 };
 void clear_Qtree(QPatch *qp){
@@ -403,16 +419,30 @@ void clear_Qtree(QPatch *qp){
 	if(qp->chld[0]!=NULL){
 		for(int i=0;i<4;i++){
 			clear_Qtree(qp->chld[i]);
-			//printf("lev=%d\n",qp->lev);
 			free(qp->chld[i]);
 			qp->chld[i]=NULL;
 		};
+	};
+	qp->intr=false;
+	qp->bndr=false;
+	qp->extr=false;
+	qp->lev=0;
+	qp->icrs=0;	
+};
+void clear_Qtree2(QPatch *qp){
+	int i;
+	if(qp->chld[0]!=NULL){
+		for(i=0;i<4;i++) clear_Qtree(qp->chld[i]);
+	};
+	if(qp->lev!=0){
+		free(qp);
+	}else{
 		qp->intr=false;
 		qp->bndr=false;
 		qp->extr=false;
-		qp->lev=0;
 		qp->icrs=0;	
-	};
+		for(i=0;i<4;i++) qp->chld[i]=NULL;
+	}
 };
 
 int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max){
@@ -476,6 +506,7 @@ int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max)
 		for(i=0; i<2; i++){
 			Ya[0]=Xa[0]+Wd[0]*i;
 			qp->chld[k]=new_QPatch(Ya,Wd);
+			//new_QPatch(Ya,Wd,&(qp->chld[k]));
 			qp->chld[k]->par=qp;
 			qp->chld[k]->lev=lev+1;
 			Qtree(qp->chld[k], el1,el2,isect, count,lev_max);
@@ -555,6 +586,7 @@ int Qtree(QPatch *qp, Ellip *els,int nelp, bool isect, int *count, int lev_max){
 		for(i=0; i<2; i++){
 			Ya[0]=Xa[0]+Wd[0]*i;
 			qp->chld[k]=new_QPatch(Ya,Wd);
+			//new_QPatch(Ya,Wd,&(qp->chld[k]));
 			qp->chld[k]->par=qp;
 			qp->chld[k]->lev=lev+1;
 			Qtree(qp->chld[k], els,nelp,isect, count,lev_max);
@@ -643,6 +675,7 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 			Ya[1]=Xa[1]+Wd[1]*j;
 		for(i=0; i<2; i++){
 			Ya[0]=Xa[0]+Wd[0]*i;
+			//new_QPatch(Ya,Wd,&(qp->chld[k]));
 			qp->chld[k]=new_QPatch(Ya,Wd);
 			qp->chld[k]->par=qp;
 			qp->chld[k]->lev=lev+1;
@@ -773,8 +806,9 @@ double Tree4::area(){
 };
 void Tree4::clean(){
 	if(ready){
-		clear_Qtree(&qp0);
 		free(leaves);
+		clear_Qtree(&qp0);
+		//clear_Qtree2(&qp0);
 		ready=false;
 	};
 };
@@ -883,18 +917,34 @@ bool Ellip::is_in(double xf[2]){
 	if(Y[0]*Y[0]+Y[1]*Y[1]>1.0) iin=false;
 	return(iin);
 };
-Poly::Poly(){};
+Poly::Poly(){
+	alocd=false;
+};
 Poly::Poly(int n){
 	np=n;
 	Poly::mem_alloc();
 	xg[0]=0.0;
 	xg[1]=0.0;
 };
+Poly::~Poly(){
+//	Thie mem_free destructor does not work
+//		for a reason not known !! 
+//	if(alocd){
+//	      free(xs);
+//	      free(ys);
+//	}
+};
 void Poly::mem_alloc(){
-	xs=(double *)std::malloc(sizeof(double)*np);
-	ys=(double *)std::malloc(sizeof(double)*np);
+	xs=(double *)malloc(sizeof(double)*np);
+	ys=(double *)malloc(sizeof(double)*np);
 	xg[0]=0.0;
 	xg[1]=0.0;
+	alocd=true;
+};
+void Poly::mem_free(){
+	free(xs);
+	free(ys);
+	alocd=false;
 };
 void Poly::set_center(){
 	for(int i=0;i<np;i++){
@@ -1065,8 +1115,9 @@ int poly_cross(Poly A, Ellip B){
 	};
 
 	//Ad.draw("temp.dat","a");
-
-	return(poly_cross(Ad,Bd));
+	int icrs=poly_cross(Ad,Bd);
+	Ad.mem_free();
+	return(icrs);
 };
 Solid::Solid(){
 	Solid::init_rand(-1);

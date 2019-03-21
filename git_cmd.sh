@@ -6,6 +6,7 @@ git add git_cmd.sh
 git add compile
 git add *.cpp
 git add *.h
+git add temp_hist.inp
 # Visualization
 git add kcell.py
 
