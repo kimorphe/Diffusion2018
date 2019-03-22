@@ -13,20 +13,20 @@
 using namespace std;
 
 #if DB==3	// Debugging memory leak 
-// -->  memory block for Poly::xs,ys are not freed 
+// -->  memory blocks for Poly::xs,ys are not freed 
 int main(){
-	int np=500;
+	int np=200;
 	double Wd[2]={1.0,1.0};
 	char fn[128]="geom0.dat";
 
 	Solid sld(np,Wd);
-//	sld.draw(fn,50);
+	sld.draw(fn,50);
 
 	Tree4 tr;
 	for(int i=0;i<1;i++){
 		printf("i_try=%d\n",i);
-//		tr.setup(sld.els,sld.nelp,false,10);
-		tr.setup(sld,10);
+		tr.setup(sld.els,sld.nelp,false,10,sld.bbox);
+//		tr.setup(sld,10);
 		tr.draw();
 		tr.clean();
 	};
@@ -71,7 +71,7 @@ int main(){
 	sld.area(9);
 
 	Tree4 tr4;
-	tr4.setup(sld,9);
+	tr4.setup(sld.els,sld.nelp,false,9,sld.bbox);
 	tr4.draw();
 	tr4.clean();
 	return(0);

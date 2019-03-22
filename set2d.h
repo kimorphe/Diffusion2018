@@ -20,6 +20,7 @@ class Bbox{
 	void setup(double xa[2], double xb[2]);
 	void draw();
 	void draw(char fn[128],char mode[3]);
+	void slide(double ux, double uy);
 	private:
 };
 Bbox bbox_union(Bbox b1, Bbox b2);
@@ -68,6 +69,7 @@ class Ellip{
 		void set_phi(double ang);
 		void scale(double s);
 		void slide(double ux,double uy, Bbox unit_cell );
+		void slide(double ux,double uy);
 		Bbox bbox;	// bounding box
 		void set_bbox();	// set bounding box
 		bool is_in(double xf[2]);
@@ -116,6 +118,7 @@ class Solid{
 		void draw(char fn[128],int ndat);
 		Bbox bbox;
 		double perturb(int p, double ux, double uy, double dphi);
+		double perturb_periodic(int p, double ux, double uy, double dphi);
 		double MC(Temp_Hist TH);
 		void init_rand(int seed);
 		double area(int Lev_Max);
@@ -152,9 +155,16 @@ int Qtree(QPatch *qp, Circ cr,int *count);
 int Qtree(QPatch *qp, Solid sld,int *count, int lev_max);
 int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max);
 int Qtree(QPatch *qp, Ellip *els, int nelp, bool isect, int *count, int lev_max);
+int Qtree(QPatch *qp, Ellip *els, int nelp, bool isect, int *count, int lev_max, Bbox unit_cell);
 double area(Ellip el1, Ellip el2, int lev_max, bool isect);
 void clear_Qtree(QPatch *qp);
 void clear_Qtree2(QPatch *qp);
+void indx4PrdBC(		// retrun indices to apply periodic B.C.
+	int *i1, int *i2, 	// 1st index (start,end)
+	int *j1, int *j2, 	// 2nd index (start,end)
+	Bbox bx, 		// bounding box of geoemetric object
+	Bbox B0			// Unit cell
+);
 class Tree4{
 	public:
 		Tree4();
@@ -166,6 +176,7 @@ class Tree4{
 		void setup(Ellip elp1, Ellip elp2, bool set_opr, int Lev_Max);
 		void setup(Ellip *els, int nelp,bool set_opr, int Lev_Max);
 		void setup(Solid sld, int Lev_Max);
+		void setup(Ellip *els, int nelp,bool set_opr, int Lev_Max,Bbox bx);
 		QPatch *leaves;
 		void draw();
 		void clean();
