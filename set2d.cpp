@@ -23,6 +23,9 @@ void Bbox::setup(double xa[2], double xb[2]){
 		Wd[i]=Xb[i]-Xa[i];
 	}
 };
+double Bbox::area(){
+	return(Wd[0]*Wd[1]);
+};
 void Bbox::draw(char fn[128],char mode[3]){
 	FILE *fp=fopen(fn,mode);
 
@@ -275,6 +278,12 @@ QPatch::QPatch(){
 	bndr=false; intr=false; extr=false;
 	for(int i=0;i<4;i++) chld[i]=NULL;
 };
+int QPatch::isin(){
+	if(intr) return(0);
+	if(bndr) return(1);
+	if(extr) return(2);
+	return(-1);
+};
 QPatch::~QPatch(){
 	//printf("QPatch destructed\n");
 };
@@ -336,6 +345,26 @@ void gather_leaves(QPatch *qp_par, int *count, QPatch *qp_leaves){
 	}else{
 		for(int k=0;k<4;k++) gather_leaves(qp_par->chld[k],count,qp_leaves);
 	};
+};
+int QtreeFind(QPatch *qp, double xf[2]){
+
+	if(qp->chld[0]==NULL) return(qp->isin());
+
+	double *Xa=qp->px.Xa;
+	double *Wd=qp->px.Wd;
+	int icell,indx[2];
+
+	while(xf[0]-Xa[0]<0.0) xf[0]+=Wd[0];
+	while(xf[1]-Xa[1]<0.0) xf[1]+=Wd[1];
+	while(xf[0]-Xa[0]>Wd[0]) xf[0]-=Wd[0];
+	while(xf[1]-Xa[1]>Wd[0]) xf[1]-=Wd[1];
+
+	indx[0]=floor(2.*(xf[0]-Xa[0])/Wd[0]);
+	indx[1]=floor(2.*(xf[1]-Xa[1])/Wd[1]);
+	icell=indx[1]*2+indx[0];
+
+	int iin=QtreeFind(qp->chld[icell],xf);
+	return(iin);
 };
 int Qtree(QPatch *qp, Circ cr,int *count){
 
@@ -865,16 +894,6 @@ void Tree4::setup(Ellip *els, int nelp, bool set_opr, int LevMax, Bbox bx){
 	count=0;
 	isect=set_opr;
 
-/*
-	for(i=0;i<nelp;i++) els[i].set_bbox();
-	Bbox bx=els[0].bbox;
-	if(isect){
-		for(i=1;i<nelp;i++) bx=bbox_cross(bx,els[i].bbox);
-	}else{
-		for(i=1;i<nelp;i++) bx=bbox_union(bx,els[i].bbox);
-	}
-*/
-
 	qp0.set_lim(bx.Xa, bx.Xb);
 	Qtree(&qp0,els,nelp,isect,&count,lev_max,bx);
 	n_leaves=count;
@@ -930,6 +949,79 @@ void Tree4::draw(){
 		fclose(fp2);
 		fclose(fp3);
 	};
+};
+void Tree4::count(){
+	int i;
+	nint=0;
+	next=0;
+	nbnd=0;
+	if(!ready){
+		printf("Tree strcuture has yet to been build");
+	}else{
+		for(i=0;i<n_leaves;i++){
+			if(leaves[i].intr) nint++;
+			if(leaves[i].bndr) nbnd++;
+			if(leaves[i].extr) next++;
+		}
+	};
+	printf("nint=%d, nbnd=%d, next=%d\n",nint,nbnd,next);
+};
+void Tree4::set_grid_params(){
+	Nx=pow(2,lev_max);
+	Ny=Nx;
+	for(int i=0;i<2;i++){
+		Xa[i]=qp0.px.Xa[i];
+		Xb[i]=qp0.px.Xb[i];
+		Wd[i]=qp0.px.Wd[i];
+	}
+	dx[0]=Wd[0]/Nx;
+	dx[1]=Wd[1]/Ny;
+	//Nx++; Ny++;
+};
+int Tree4::grid_type(int id, int jd, int cnct[4]){
+	// 0: interior grid
+	// 1: boundary grid
+	// 2: exterior grid
+	// -1: error
+	
+	Tree4::set_grid_params();
+	while(id<0) id+=Nx; 
+	while(jd<0) jd+=Ny; 
+	while(id>=Nx) id-=Nx; 
+	while(jd>=Ny) jd-=Ny; 
+
+	double xf[2],x0[2];
+	x0[0]=Xa[0]+dx[0]*id;
+	x0[1]=Xa[1]+dx[1]*jd;
+
+	int i,j,ityp;
+	int ntyp[3]={0,0,0};
+	int isgn[4]={-1, 1, 1,-1};
+	int jsgn[4]={-1,-1, 1, 1};
+	int isum=0;
+
+	for(i=0;i<4;i++) cnct[i]=0;
+	for(j=0;j<2;j++){
+		xf[1]=x0[1]+jsgn[isum]*dx[1]*0.5;
+	for(i=0;i<2;i++){
+		xf[0]=x0[0]+isgn[isum]*dx[0]*0.5;
+		ityp=QtreeFind(&qp0,xf);
+		if(ityp!=-1) ntyp[ityp]++;
+		if(ityp==1){
+			cnct[isum]=1;
+			cnct[(isum+1)%4]=1;
+		};
+		isum++;
+	}
+	};
+
+	if(ntyp[1]>0){
+//		printf("%lf %lf\n",x0[0],x0[1]);
+		return(1);
+	};
+	if(ntyp[0]>ntyp[2]) return(0);
+	if(ntyp[2]>ntyp[1]) return(2);
+	return(-1);
 };
 double Tree4::area(){
 	int i,lev;
@@ -1294,6 +1386,7 @@ Solid::Solid(int n, double Wd[2]){
 	double PI=4.0*atan(1.0);
 	double r0=Wd[0]*0.03,aspect=0.6;
 
+	double S0=0.0;
 	for(int i=0;i<nelp;i++){
 		x=Urnd(mt)*Wd[0]+Xa[0];
 		y=Urnd(mt)*Wd[1]+Xa[1];
@@ -1302,7 +1395,12 @@ Solid::Solid(int n, double Wd[2]){
 		els[i].set_radi(r0,r0*aspect);
 		isect[i]=false;
 		els[i].set_bbox();
+		S0+=els[i].area();
 	};
+	printf("Number of particles=%d\n",nelp);
+	double psi=S0/bbox.area();
+	printf("Max. packing density=%lf%%\n",psi*100.);
+	printf("(min. porosity=%lf\n",1-psi);
 };
 void Solid::init_rand(int seed){
 	mt=std::mt19937_64(seed);
@@ -1326,7 +1424,8 @@ double Solid::MC(Temp_Hist TH){
 	double tau=TH.tau();
 	double a1=1.0, a2=0.1;
 	alph=(1.-tau)*a1+tau*a2;	// a1 --> a2
-	beta=(1.-tau)*1.0+tau*0.5;	// 1.0 --> 0.5 
+	//beta=(1.-tau)*1.0+tau*0.5;	// 1.0 --> 0.5 
+	beta=1.0;
 	for(ip=0; ip<nelp; ip++){
 		if(ip%100==0) printf("ip=%d\n",ip);
 		ux=0.0; uy=0.0; dphi=0.0;
@@ -1493,6 +1592,9 @@ double Solid::area(int lev_max){
 		tr4.clean();
 	};
 	printf("Overlap =%lf\n",si-S);
+	double phi=S/bbox.area();
+	printf("Packng Density =%lf%%\n",S*100.);
+	printf("Porosity sity =%lf%%\n",1-S);
 	return(S);
 };
 

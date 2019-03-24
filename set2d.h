@@ -21,6 +21,7 @@ class Bbox{
 	void draw();
 	void draw(char fn[128],char mode[3]);
 	void slide(double ux, double uy);
+	double area();
 	private:
 };
 Bbox bbox_union(Bbox b1, Bbox b2);
@@ -145,6 +146,7 @@ class QPatch{
 		bool intr;
 		bool extr;
 		void set_lim(double xa[2], double xb[2]);
+		int isin();	// 0:interior, 1:boundary, 2:exterior, -1:error
 	private:
 	protected:
 };
@@ -156,6 +158,7 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max);
 int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max);
 int Qtree(QPatch *qp, Ellip *els, int nelp, bool isect, int *count, int lev_max);
 int Qtree(QPatch *qp, Ellip *els, int nelp, bool isect, int *count, int lev_max, Bbox unit_cell);
+int QtreeFind(QPatch *qp, double xf[2]);
 double area(Ellip el1, Ellip el2, int lev_max, bool isect);
 void clear_Qtree(QPatch *qp);
 void clear_Qtree2(QPatch *qp);
@@ -181,6 +184,12 @@ class Tree4{
 		void draw();
 		void clean();
 		double area();
+		int nint,next,nbnd;
+		void count();
+		void set_grid_params();
+		int Nx,Ny;
+		double dx[2],Xa[2],Xb[2],Wd[2];
+		int grid_type(int id, int jd, int cnct[4]);
 	private:
 };
 class Poly{

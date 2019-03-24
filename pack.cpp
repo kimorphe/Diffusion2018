@@ -1,4 +1,4 @@
-#define DB 0
+#define DB 4
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +11,211 @@
 #endif
 
 using namespace std;
+
+class Node{
+	public:
+		int iad;// data count (address in the Node class array NDs[]) 
+		int id;	// grid number in the underlying regular grid
+		int cnct[4];	// connected  nodes
+		Node *cnds[4];	// connected nodes 
+		Node();	//default constructor
+		int nc;
+	private:
+};
+Node::Node(){
+	id=-1;
+	for(int i=0;i<4;i++){
+	       	cnct[i]=-1;
+		cnds[i]=NULL;
+	}
+};
+
+class Grid{
+	public:
+		int Ng;		// total number of grids
+		int Nx,Ny;	// number of underling regular grid (Ng != Nx x Ny)
+		Node *NDs;	// grid points
+		bool ready;
+		double Xa[2],Wd[2],Xb[2],dx[2];
+		int Ndiv[2];
+		Grid();	// default constructor
+		void setup(Tree4 tr4);
+		int find(int  k);
+		void l2cod(int l,double *x, double *y);
+		void indx2cod(int i,int j, double *x, double *y);
+		void l2ij(int l, int *i, int *j);
+		void grid_cod(int inod,double *xcod, double *ycod);
+	private:
+		void mem_alloc();
+};
+
+int Grid::find(int k){
+	if(k<NDs[0].id) return(-1);
+	if(k>NDs[Ng-1].id) return(-1);
+	int i1=0;
+	int i2=Ng-1;
+	int im;
+
+	if(NDs[i1].id==k) return(i1);
+	if(NDs[i2].id==k) return(i2);
+	while(i2-i1>0){
+		im=(i1+i2)/2;
+		if(NDs[im].id==k) return(im);
+		if(NDs[im].id>k){
+			i2=im;
+		}else{
+			i1=im;
+		}
+	}
+	return(-1);
+};
+
+void Grid::setup(Tree4 tr4){
+	tr4.set_grid_params();
+
+	Nx=tr4.Nx;
+	Ny=tr4.Ny;
+	for(int i=0;i<2;i++){
+		Xa[i]=tr4.Xa[i];
+		Xb[i]=tr4.Xb[i];
+		Wd[i]=tr4.Wd[i];
+		dx[i]=tr4.dx[i];
+	}
+
+	int cnct[4];
+	int ngb=0;
+	int m,k;
+	for(k=0; k<tr4.Nx; k++){
+	for(m=0; m<tr4.Ny; m++){
+		if(tr4.grid_type(k,m,cnct)==1) ngb++;
+	}
+	}
+	printf("ngb=%d\n",ngb);
+	Ng=ngb;
+	Grid::mem_alloc();
+
+	ngb=0;
+	int isum=0,l,nc;
+	for(k=0; k<tr4.Nx; k++){
+	for(m=0; m<tr4.Ny; m++){
+		if(tr4.grid_type(k,m,cnct)==1){
+			NDs[ngb].id=isum;
+			NDs[ngb].iad=ngb;
+			nc=0;
+			for(l=0;l<4;l++){
+			       NDs[ngb].cnct[l]=cnct[l];
+			       nc+=cnct[l];
+			};
+			NDs[ngb].nc=nc;
+			ngb++;
+		};
+		isum++;
+	}
+	}
+
+	int iofst[4]={-1, 0, 1, 0};
+	int jofst[4]={ 0,-1, 0, 1};
+	int ix0,jy0,ix,jy,adr,id,ig;
+	for(k=0;k<Ng;k++){
+		ix0=NDs[k].id/Ny;
+		jy0=NDs[k].id%Ny;
+		nc=0;
+		for(l=0;l<4;l++){
+			if(NDs[k].cnct[l]==1){
+				ix=ix0+iofst[l];		
+				jy=jy0+jofst[l];		
+				while(ix<0) ix+=Nx;
+				while(jy<0) jy+=Ny;
+				while(ix>=Nx) ix-=Nx;
+				while(jy>=Ny) jy-=Ny;
+				id=ix*Ny+jy;
+				adr=Grid::find(id);
+				NDs[k].cnds[nc]=(NDs+adr);
+				nc++;
+			};
+		};
+	};
+
+};
+void Grid::l2cod(int l,double *x,double *y){
+	int i,j;
+	Grid::l2ij(l,&i,&j);
+	Grid::indx2cod(i,j,x,y);
+};
+void Grid::indx2cod(int i,int j,double *x,double *y){
+	*x=Xa[0]+dx[0]*i;
+	*y=Xa[1]+dx[1]*j;
+};
+void Grid::l2ij(int l, int *i, int *j){
+	*i=l/Ny;
+	*j=l%Ny;
+};
+Grid::Grid(){
+	Ng=1;
+	ready=false;
+};
+void Grid::mem_alloc(){
+	NDs=(Node *)malloc(sizeof(Node)*Ng);
+	ready=true;
+};
+void Grid::grid_cod(int inod,double *xcod, double *ycod){
+	int id=NDs[inod].id;
+	int i,j;
+	Grid::l2ij(id,&i,&j);
+	Grid::indx2cod(i,j,xcod,ycod);
+};
+//----------------------------------------------------------
+#if DB==4
+// Testing Grid and Node classes on which random walks will be taken
+int main(){
+	int np=100;	// number of particles
+	int Lev=9;	// Quad-tree height
+	double Wd[2]={1.0,1.0}; // Unit Cell Size
+	Solid sld(np,Wd);
+	Tree4 tr4;
+	tr4.setup(sld.els,sld.nelp,false,Lev,sld.bbox);
+
+	double xf[2]={0.5,0.384};
+	printf("Is interior point? --> %d\n",QtreeFind(&(tr4.qp0),xf));
+	tr4.count();
+	tr4.set_grid_params();
+	printf("Xa=%lf %lf\n",tr4.Xa[0],tr4.Xa[1]);
+	printf("Xb=%lf %lf\n",tr4.Xb[0],tr4.Xb[1]);
+	printf("Wd=%lf %lf\n",tr4.Wd[0],tr4.Wd[1]);
+	printf("dx=%lf %lf\n",tr4.dx[0],tr4.dx[1]);
+
+	Grid gd;
+	gd.setup(tr4);
+
+
+	std::mt19937_64 engine(-2);
+	std::uniform_real_distribution<double>MT01(0.0,1.0);
+	double xcod,ycod;
+	int next,now;
+	now=int(MT01(engine)*gd.Ng);
+	printf("Start grid=%d\n",now);
+	Node *nd0;
+	nd0=&gd.NDs[now];
+	for(int j=0;j<100;j++){
+		next=int(MT01(engine)*nd0->nc);
+		nd0=nd0->cnds[next];
+		//printf("node no.=%d ",next);
+		gd.grid_cod(nd0->iad,&xcod,&ycod);
+		printf("%lf %lf\n",xcod,ycod);
+	};
+
+
+	/*
+	int i,ig;
+	for(i=0;i<10;i++){
+		ig=gd.NDs[i].id;
+		printf("grid no.=%d, address=%d\n",ig,gd.find(ig));
+	};
+	*/
+	tr4.draw();
+	return(0);
+};
+#endif
 
 #if DB==3	// Debugging memory leak 
 // -->  memory blocks for Poly::xs,ys are not freed 
@@ -34,6 +239,7 @@ int main(){
 	int lev_max=9;
 	printf("S=%lf\n",sld.area(lev_max));
 
+
 /*
 	Tree4 tr4;
 	tr4.setup(sld,9);
@@ -48,30 +254,31 @@ int main(){
 	//std::uniform_real_distribution<double> RndR;
 	//RndR=uniform_real_distribution<double>(0.0,1.0);
 	Temp_Hist TH;
-	char fnt[128]="temp_hist.inp";
+	char fnt[128]="temp_hist.inp";	// Annealing parameter (temperature control)
 	TH.load(fnt);
 
-	int np=500;
-	double Wd[2]={1.0,1.0};
+	int np=500;	// number of particles
+	int Lev=9;	// Quad-tree height
+	double Wd[2]={1.0,1.0}; // Unit Cell Size
 	char fn[128]="geom0.dat";
 	double dE_tot=0.0,dE;
 	Solid sld(np,Wd);
 	sld.draw(fn,50);
 
-	sld.area(9);
+	sld.area(Lev);
 	while(TH.cont_iteration){
 		dE=sld.MC(TH);
 		dE_tot+=dE;
-		printf("dE=%lf\n",dE);
 		TH.inc_Temp();
+		printf("tau=%lf, dE=%lf\n",TH.tau(),dE);
 	};
 	printf("dE_tot=%lf\n",dE_tot);
 	sprintf(fn,"geom1.dat");
 	sld.draw(fn,50);
-	sld.area(9);
+	sld.area(Lev);
 
 	Tree4 tr4;
-	tr4.setup(sld.els,sld.nelp,false,9,sld.bbox);
+	tr4.setup(sld.els,sld.nelp,false,Lev,sld.bbox);
 	tr4.draw();
 	tr4.clean();
 	return(0);
