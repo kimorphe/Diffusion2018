@@ -1415,6 +1415,32 @@ void Solid::draw(char fn[128],int ndat){
 		els[i].draw(fn,ndat,md);
 	}
 };
+void Solid::write(char fn[128]){
+	FILE *fp=fopen(fn,"w");
+	Ellip el;
+	fprintf(fp,"%d\n",nelp);
+	for(int i=0;i<nelp;i++){
+		el=els[i];
+		fprintf(fp,"%le, %le, %le, %le, %le\n",el.xc[0],el.xc[1],el.radi[0],el.radi[1],el.phi);
+	};
+	fclose(fp);
+};
+void Solid::load(char fn[128]){
+	FILE *fp=fopen(fn,"r");
+	Ellip el;
+	fscanf(fp,"%d\n",&nelp);
+	printf("nelp=%d\n",nelp);
+	els=(Ellip *)malloc(sizeof(Ellip)*nelp);
+	isect=(bool *)malloc(sizeof(bool)*nelp);
+	Solid::init_rand(-1);
+	for(int i=0;i<nelp;i++){
+		isect[i]=false;
+		fscanf(fp,"%le, %le, %le, %le, %le\n",el.xc,el.xc+1,el.radi,el.radi+1,&el.phi);
+		els[i]=el;
+		els[i].set_bbox();
+	};
+	fclose(fp);
+};
 double Solid::MC(Temp_Hist TH){
 	double PI=4.0*atan(1.0);
 	int ip;
@@ -1429,11 +1455,12 @@ double Solid::MC(Temp_Hist TH){
 	for(ip=0; ip<nelp; ip++){
 		if(ip%100==0) printf("ip=%d\n",ip);
 		ux=0.0; uy=0.0; dphi=0.0;
-		if(ip %2==0){
-			ux=(2.*(Urnd(mt)-0.5)*bbox.Wd[0]*0.5 )*alph;
-			uy=(2.*(Urnd(mt)-0.5)*bbox.Wd[1]*0.5 )*alph;
+		if(TH.istep %2==0){
+			ux=(2.*(Urnd(mt)-0.5)*bbox.Wd[0]*0.6 )*alph;
+			uy=(2.*(Urnd(mt)-0.5)*bbox.Wd[1]*0.6 )*alph;
 		}else{
-			dphi=PI*Urnd(mt)*beta;
+			//dphi=PI*Urnd(mt)*beta;
+			dphi=2.*PI*(Urnd(mt)-0.5)*beta*0.5;
 		};
 	       	//dE=perturb(ip,ux,uy,dphi);
 	       	dE=perturb_periodic(ip,ux,uy,dphi);

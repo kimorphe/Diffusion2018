@@ -123,6 +123,8 @@ class Solid{
 		double MC(Temp_Hist TH);
 		void init_rand(int seed);
 		double area(int Lev_Max);
+		void load(char fn[128]);
+		void write(char fn[128]);
 		std::mt19937_64 mt;	// random number generator
 		std::uniform_real_distribution<> Urnd;
 		std::normal_distribution<> Grnd;

@@ -1,4 +1,4 @@
-#define DB 4
+#define DB 0
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -171,7 +171,14 @@ int main(){
 	int np=100;	// number of particles
 	int Lev=9;	// Quad-tree height
 	double Wd[2]={1.0,1.0}; // Unit Cell Size
-	Solid sld(np,Wd);
+	//Solid sld(np,Wd);
+	char fn[128]="solid.dat";
+	Solid sld;
+	
+	double Xa[2]={0.0,0.0};
+	sld.load(fn);
+	sld.bbox.setup(Xa,Wd);
+
 	Tree4 tr4;
 	tr4.setup(sld.els,sld.nelp,false,Lev,sld.bbox);
 
@@ -192,17 +199,24 @@ int main(){
 	std::uniform_real_distribution<double>MT01(0.0,1.0);
 	double xcod,ycod;
 	int next,now;
-	now=int(MT01(engine)*gd.Ng);
 	printf("Start grid=%d\n",now);
-	Node *nd0;
-	nd0=&gd.NDs[now];
-	for(int j=0;j<100;j++){
-		next=int(MT01(engine)*nd0->nc);
-		nd0=nd0->cnds[next];
-		//printf("node no.=%d ",next);
-		gd.grid_cod(nd0->iad,&xcod,&ycod);
-		printf("%lf %lf\n",xcod,ycod);
+	Node *nd0[200];
+	int i,j;
+	FILE *fp=fopen("rw.out","w");
+	for(i=0;i<200;i++){
+		now=int(MT01(engine)*gd.Ng);
+		nd0[i]=&gd.NDs[now];
 	};
+	for(j=0;j<10000;j++){
+		for(i=0;i<100;i++){
+			next=int(MT01(engine)*nd0[i]->nc);
+			nd0[i]=nd0[i]->cnds[next];
+			//printf("node no.=%d ",next);
+			gd.grid_cod(nd0[i]->iad,&xcod,&ycod);
+			fprintf(fp,"%lf %lf\n",xcod,ycod);
+		}
+		fprintf(fp,"\n");
+	}
 
 
 	/*
@@ -257,25 +271,40 @@ int main(){
 	char fnt[128]="temp_hist.inp";	// Annealing parameter (temperature control)
 	TH.load(fnt);
 
-	int np=500;	// number of particles
+	int np=400;	// number of particles
 	int Lev=9;	// Quad-tree height
 	double Wd[2]={1.0,1.0}; // Unit Cell Size
 	char fn[128]="geom0.dat";
 	double dE_tot=0.0,dE;
+
 	Solid sld(np,Wd);
-	sld.draw(fn,50);
+	//sld.draw(fn,50);
+
+	double Xa[2]={0.0,0.0};
+	char fns[128]="solid1.dat";
+	/*
+	Solid sld;
+	sld.load(fns);
+	sld.bbox.setup(Xa,Wd);
+	*/
 
 	sld.area(Lev);
+	FILE *fl=fopen("log.dat","w");
 	while(TH.cont_iteration){
 		dE=sld.MC(TH);
 		dE_tot+=dE;
-		TH.inc_Temp();
-		printf("tau=%lf, dE=%lf\n",TH.tau(),dE);
+		TH.inc_Temp_exp();
+		printf("tau=%lf, dE=%le dE=%le\n",TH.tau(),dE,dE_tot);
+		fprintf(fl,"%ld %le %le %le %le\n",TH.istep,TH.tau(),TH.Temp,dE,dE_tot);
+		fflush(stdout);
 	};
 	printf("dE_tot=%lf\n",dE_tot);
 	sprintf(fn,"geom1.dat");
 	sld.draw(fn,50);
 	sld.area(Lev);
+
+	sprintf(fn,"solid.dat");
+	sld.write(fn);
 
 	Tree4 tr4;
 	tr4.setup(sld.els,sld.nelp,false,Lev,sld.bbox);
