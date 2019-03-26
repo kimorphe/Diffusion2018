@@ -1,0 +1,6 @@
+# Ts, Te (initial and final temperatures)
+ 1.e04 1.e-05
+# Nstep (number of Monte Carlo Step
+ 20
+ 300
+
