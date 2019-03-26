@@ -1,6 +1,18 @@
 # Ts, Te (initial and final temperatures)
+<<<<<<< HEAD
  1.e04 1.e-05
 # Nstep (number of Monte Carlo Step
  20
  300
 
+=======
+ 1.e01 1.e-06
+# Nstep (number of Monte Carlo Step
+ 300
+
+ 1.e04 1.e-05 --> 5%
+ 1.e02 1.e-08 --> 4.6% overlap
+ 1.e01 1.e-08 --> 4.5%
+
+ 1.e02 1.e-09 -- restart 2.3%
+>>>>>>> 75810cb8bca3fba43a14f3d1a053dd28005fad65
