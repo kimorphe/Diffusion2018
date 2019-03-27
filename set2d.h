@@ -91,6 +91,7 @@ class Pixel{
 		void print();
 		void draw(char fn[128],char mode[3]);
 		void draw(FILE *fp);
+		void write(FILE *fp);
 		void draw();
 		void set_Xa(double xa,double ya);
 		void set_Xb(double xb,double yb);
@@ -141,6 +142,7 @@ class QPatch{
 		void print();	// 
 		void draw(char fn[128],char mode[3]);
 		void draw(FILE *fp);
+		void write(FILE *fp);
 		void draw();
 		int lev;
 		int icrs;	//  0:exterior/ 1:interior/ 2:inclusive/ 3:boundary pixel
@@ -184,6 +186,7 @@ class Tree4{
 		void setup(Ellip *els, int nelp,bool set_opr, int Lev_Max,Bbox bx);
 		QPatch *leaves;
 		void draw();
+		void write();
 		void clean();
 		double area();
 		int nint,next,nbnd;

@@ -151,6 +151,12 @@ void Pixel::draw(char fn[128],char mode[3]){
 	fprintf(fp,"\n");
 	fclose(fp);
 };
+void Pixel::write(FILE *fp){
+	if(~ready) Pixel::setup();
+	for(int i=0;i<5;i++){
+		fprintf(fp,"%lf,%lf\n",xs[i%4],ys[i%4]);
+	};
+};
 void Pixel::draw(FILE *fp){
 	if(~ready) Pixel::setup();
 	for(int i=0;i<5;i++){
@@ -292,6 +298,9 @@ void QPatch::print(){
 };
 void QPatch::draw(char fn[128],char mode[3]){
 	px.draw(fn,mode);
+};
+void QPatch::write(FILE *fp){
+	px.write(fp);
 };
 void QPatch::draw(FILE *fp){
 	px.draw(fp);
@@ -944,6 +953,31 @@ void Tree4::draw(){
 			if(leaves[i].intr) leaves[i].draw(fp1);
 			if(leaves[i].bndr) leaves[i].draw(fp2);
 			if(leaves[i].extr) leaves[i].draw(fp3);
+		}
+		fclose(fp1);
+		fclose(fp2);
+		fclose(fp3);
+	};
+};
+void Tree4::write(){
+	int i;
+	char mode[3]="a";
+	char fni[128],fnb[128],fne[128];
+	FILE *fp1,*fp2,*fp3;
+
+	if(!ready){
+		printf("Tree strcuture has yet to been build");
+	}else{
+		sprintf(fni,"qtree_in.dat");
+		sprintf(fnb,"qtree_bnd.dat");
+		sprintf(fne,"qtree_ex.dat");
+		fp1=fopen(fni,"w");
+		fp2=fopen(fnb,"w");
+		fp3=fopen(fne,"w");
+		for(i=0;i<n_leaves;i++){
+			if(leaves[i].intr) leaves[i].write(fp1);
+			if(leaves[i].bndr) leaves[i].write(fp2);
+			if(leaves[i].extr) leaves[i].write(fp3);
 		}
 		fclose(fp1);
 		fclose(fp2);

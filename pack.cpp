@@ -1,4 +1,5 @@
-#define DB 0
+//#define DB 0
+#define DB 4
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -181,6 +182,10 @@ int main(){
 
 	Tree4 tr4;
 	tr4.setup(sld.els,sld.nelp,false,Lev,sld.bbox);
+	tr4.write();
+	printf("Tree data written.");
+	int tmp;
+	scanf("%d",&tmp);
 
 	double xf[2]={0.5,0.384};
 	printf("Is interior point? --> %d\n",QtreeFind(&(tr4.qp0),xf));
@@ -203,7 +208,6 @@ int main(){
 	
 	int nwk=10000,Nt=20000,inc=100; 
 	
-	//Node *nd0[200];
 	Node **nd0=(Node **)malloc(sizeof(Node*)*nwk);
 	int i,j;
 	FILE *fp=fopen("rw.out","w");
