@@ -283,6 +283,11 @@ QPatch::QPatch(){
 	icrs=0;	
 	bndr=false; intr=false; extr=false;
 	for(int i=0;i<4;i++) chld[i]=NULL;
+
+	refine[0]=false; // exterior (icrs=0)
+	refine[1]=false; // interior (icrs=1)
+	refine[2]=true;  // inclusive(icrs=2)
+	refine[3]=true;  // boundary (icrs=3)
 };
 int QPatch::isin(){
 	if(intr) return(0);
@@ -295,6 +300,14 @@ QPatch::~QPatch(){
 };
 void QPatch::print(){
 	px.print();
+};
+void QPatch::show_prms(){
+	printf("lev=%d, icrs=%d\n",lev,icrs);
+	printf("refine=");
+	for(int i=0;i<4;i++) printf(" %d",refine[i]);
+	printf("\n");
+	printf("size & position\n");
+	px.draw();
 };
 void QPatch::draw(char fn[128],char mode[3]){
 	px.draw(fn,mode);
@@ -377,7 +390,7 @@ int QtreeFind(QPatch *qp, double xf[2]){
 };
 int Qtree(QPatch *qp, Circ cr,int *count){
 
-	int i,j,k;
+	int i,j,k,l;
 	double Xa[2],Ya[2],Wd[2];
 
 	int lev=qp->lev;
@@ -398,7 +411,8 @@ int Qtree(QPatch *qp, Circ cr,int *count){
 	Wd[1]=qp->px.Wd[1]*0.5;
 	Xa[0]=qp->px.Xa[0];
 	Xa[1]=qp->px.Xa[1];
-	if(icrs>1){
+	//if(icrs>1){
+	if(qp->refine[icrs]){
 		k=0;
 		for(j=0; j<2; j++){
 			Ya[1]=Xa[1]+Wd[1]*j;
@@ -408,6 +422,7 @@ int Qtree(QPatch *qp, Circ cr,int *count){
 			//new_QPatch(Ya,Wd,qp->chld[k]);
 			qp->chld[k]->par=qp;
 			qp->chld[k]->lev=lev+1;
+			for(l=0;l<4;l++) qp->chld[k]->refine[l]=qp->refine[l];
 			Qtree(qp->chld[k], cr, count);
 			k++;
 		}
@@ -535,13 +550,14 @@ int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max)
 		return(lev);
 	}
 
-	int i,j,k;
+	int i,j,k,l;
 	double Xa[2],Ya[2],Wd[2];
 	Wd[0]=qp->px.Wd[0]*0.5;
 	Wd[1]=qp->px.Wd[1]*0.5;
 	Xa[0]=qp->px.Xa[0];
 	Xa[1]=qp->px.Xa[1];
-	if(icrs>1){
+	//if(icrs>1){
+	if(qp->refine[icrs]){
 		k=0;
 		for(j=0; j<2; j++){
 			Ya[1]=Xa[1]+Wd[1]*j;
@@ -551,6 +567,7 @@ int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max)
 			//new_QPatch(Ya,Wd,&(qp->chld[k]));
 			qp->chld[k]->par=qp;
 			qp->chld[k]->lev=lev+1;
+			for(l=0;l<4;l++) qp->chld[k]->refine[l]=qp->refine[l];
 			Qtree(qp->chld[k], el1,el2,isect, count,lev_max);
 			k++;
 		}
@@ -648,13 +665,14 @@ int Qtree(
 		return(lev);
 	}
 
-	int k;
+	int k,l;
 	double Xa[2],Ya[2],Wd[2];
 	Wd[0]=qp->px.Wd[0]*0.5;
 	Wd[1]=qp->px.Wd[1]*0.5;
 	Xa[0]=qp->px.Xa[0];
 	Xa[1]=qp->px.Xa[1];
-	if(icrs>1){
+	//if(icrs>1){
+	if(qp->refine[icrs]){
 		k=0;
 		for(j=0; j<2; j++){
 			Ya[1]=Xa[1]+Wd[1]*j;
@@ -664,6 +682,7 @@ int Qtree(
 			//new_QPatch(Ya,Wd,&(qp->chld[k]));
 			qp->chld[k]->par=qp;
 			qp->chld[k]->lev=lev+1;
+			for(l=0;l<4;l++) qp->chld[k]->refine[l]=qp->refine[l];
 			Qtree(qp->chld[k], els,nelp,isect, count,lev_max,unit_cell);
 			k++;
 		}
@@ -727,13 +746,14 @@ int Qtree(QPatch *qp, Ellip *els,int nelp, bool isect, int *count, int lev_max){
 		return(lev);
 	}
 
-	int j,k;
+	int j,k,l;
 	double Xa[2],Ya[2],Wd[2];
 	Wd[0]=qp->px.Wd[0]*0.5;
 	Wd[1]=qp->px.Wd[1]*0.5;
 	Xa[0]=qp->px.Xa[0];
 	Xa[1]=qp->px.Xa[1];
-	if(icrs>1){
+	//if(icrs>1){
+	if(qp->refine[icrs]){
 		k=0;
 		for(j=0; j<2; j++){
 			Ya[1]=Xa[1]+Wd[1]*j;
@@ -743,6 +763,7 @@ int Qtree(QPatch *qp, Ellip *els,int nelp, bool isect, int *count, int lev_max){
 			//new_QPatch(Ya,Wd,&(qp->chld[k]));
 			qp->chld[k]->par=qp;
 			qp->chld[k]->lev=lev+1;
+			for(l=0;l<4;l++) qp->chld[k]->refine[l]=qp->refine[l];
 			Qtree(qp->chld[k], els,nelp,isect, count,lev_max);
 			k++;
 		}
@@ -756,7 +777,7 @@ int Qtree(QPatch *qp, Ellip *els,int nelp, bool isect, int *count, int lev_max){
 //---------------------------------------------------------------
 int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 
-	int i,j,k,icrs;
+	int i,j,k,l,icrs;
 	double Xa[2],Ya[2],Wd[2];
 
 	int lev=qp->lev;
@@ -823,7 +844,8 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 	Wd[1]=qp->px.Wd[1]*0.5;
 	Xa[0]=qp->px.Xa[0];
 	Xa[1]=qp->px.Xa[1];
-	if(icrs>1){
+	//if(icrs>1){
+	if(qp->refine[icrs]){
 		k=0;
 		for(j=0; j<2; j++){
 			Ya[1]=Xa[1]+Wd[1]*j;
@@ -833,6 +855,7 @@ int Qtree(QPatch *qp, Solid sld,int *count, int lev_max){
 			qp->chld[k]=new_QPatch(Ya,Wd);
 			qp->chld[k]->par=qp;
 			qp->chld[k]->lev=lev+1;
+			for(l=0;l<4;l++) qp->chld[k]->refine[l]=qp->refine[l];
 			Qtree(qp->chld[k], sld, count,lev_max);
 			k++;
 		}

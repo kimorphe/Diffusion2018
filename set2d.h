@@ -146,11 +146,13 @@ class QPatch{
 		void draw();
 		int lev;
 		int icrs;	//  0:exterior/ 1:interior/ 2:inclusive/ 3:boundary pixel
+		bool refine[4]; // Patch is/isn't to be refined if refine[icrs] = true/false 
 		bool bndr;
 		bool intr;
 		bool extr;
 		void set_lim(double xa[2], double xb[2]);
 		int isin();	// 0:interior, 1:boundary, 2:exterior, -1:error
+		void show_prms();
 	private:
 	protected:
 };

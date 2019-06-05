@@ -4,6 +4,7 @@ git add Readme.txt
 git add git_cmd.sh
 # C++ Source
 git add compile
+git add makefile
 git add *.cpp
 git add *.h
 git add temp_hist.inp
