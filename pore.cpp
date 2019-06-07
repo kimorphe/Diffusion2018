@@ -6,36 +6,111 @@
 
 using namespace std;
 //---------------------------------------------------------------------------------
+class Material{
+	public:
+		double gmm[3][3];	// interfacial energy (0:gas, 1:fluid, 2: solid)
+		double thE;		// contact angle
+		void load(double th); 	// set gmm values 
+		double gmm_max;		// maximum value in gmm
+		void  normalize();	// normalize gmm
+		void  print_gmm(); // print interfacial energy
+		double erg;	// cell energy
+};
 class Cell{
 	public:
 		QPatch *qp0;
 		int cnct[8];//connected ?
-		Cell *cncl[8];
-		int nc;	// number 
-		Cell();
+		Cell *cncl[8]; //pointer to connected cells
+		int nc;	// number  of connected cells
+		Cell();	// constructuor
 		int ID;		// linear index for 2D Grid
 		int iad;	// address in PoreCells[ncell]
 		int phs;	// 0 = solid, 1 = fluid, 2 = void
+		int phs_bff;
+		double erg;
+		double erg_bff;
 	private:
 };
 class PoreCells:public Tree4{
 	public:
-		int ncell; 
-		Cell *cells;
-		PoreCells();
-		void setup(Ellip *els,int nelp,bool set_opr, int Lev_Max,Bbox bx);
-		int find(int id);
-		void connect();
-		void l2ij(int l, int *i, int *j);
+		int ncell; 	// number of cells
+		Cell *cells;	// pointer(array) to cell class instances
+		PoreCells();	// constructor
+		void setup(Ellip *els,int nelp,bool set_opr, int Lev_Max,Bbox bx); // generate cells 
+		int find(int id);	// find cell having a given linear grid number(id).
+		void connect();	// establish neghboring cell connection 
+		void l2ij(int l, int *i, int *j); // index transform ( linear to 2D index)
+		double Sr;	// degree of water saturation
+		int n_void,n_water; // number of gas and fluid cells, resp.
+		int init(double sr); // initialize phase distribution
+		int *indx_w;	// index set of fluid phase
+		int *indx_v;	// index set of gas phase
+		double cell_energy(int iad); // evaluate interfacial energy/cell
+		double total_energy(); // evaluate total interfacial energy
+		Material mtrl;	// material constants (interfaceial energy)
+		void load_gmm(double th); // load gmm data (th = fluid/solid contact angle)
+		double Etot;	// total interfacial energy
+		double swap(int id, int jd); // swap cell id & jd tempralily
+		void reject_swap(int id, int jd); // apply swap 
+		void MC_stepping();	// Monte Carlo stepping 
+		void write_phs();
 	private:
 };
 //---------------------------------------------------------------------------------
+void Material::load(
+		double th // contact angle in deg
+){
+	double PI=4.0*atan(1.0);
+	thE=th/180.*PI;	// contact angle in rad
+
+//		0:air, 1:water, 2: solid
+
+	double g10=70.0;	// air-water
+	double g20=420.0;	// air-solid
+	double g21=g20-g10*cos(thE); // water-solid
+
+	gmm[0][0]=0.0; 
+	gmm[1][0]=g10; gmm[1][1]=0.0;
+	gmm[2][0]=g20; gmm[2][1]=g21; gmm[2][2]=0.0;
+
+	gmm[0][1]=gmm[1][0];
+	gmm[0][2]=gmm[2][0];
+	gmm[1][2]=gmm[2][1];
+
+	gmm_max=g10;
+	if(gmm_max< g20) gmm_max=g20;
+
+};
+void Material::normalize(){
+	int i,j;
+	for(i=0; i<3; i++){
+	for(j=0; j<3; j++){
+		gmm[i][j]/=gmm_max;
+	}
+	}
+};
+void Material::print_gmm(){
+	int i,j;
+	printf("-------- Interfacial Energy gmm[3][3]-----------\n");
+	printf(" (0:gas, 1:fluid, 2: solid )\n");
+	for(i=0; i<3; i++){
+	for(j=0; j<3; j++){
+		printf("%lf ",gmm[i][j]);
+	}
+	printf("\n");
+	}
+};
+
+
 Cell::Cell(){
 	for(int i=0;i<8;i++){
 		cnct[i]=0;
 	};
 	ID=-1;
 	iad=-1;
+	erg=0.0;
+	erg_bff=0.0;
+
 };
 PoreCells::PoreCells(){
 	ncell=0;
@@ -59,6 +134,10 @@ void PoreCells::setup(
 	};
 	printf("ncell=%d\n",ncell);
 	cells=(Cell *)malloc(sizeof(Cell)*ncell); // allocate memory
+	for(i=0;i<ncell;i++){
+		cells[i].phs=0;
+		cells[i].phs_bff=0;
+	};
 
 	isum=0;
 	iad=0;
@@ -155,9 +234,182 @@ void PoreCells::connect(){
 	}
 	fclose(fp);
 };
+int PoreCells::init(double sr){
+
+	std::mt19937_64 engine(-2);
+	std::uniform_int_distribution<int>MT01(0,ncell);
+
+	Sr=sr;
+	n_water=int(ncell*Sr);
+	n_void=ncell-n_water;
+	indx_w=(int *)malloc(sizeof(int)*n_water);
+	indx_v=(int *)malloc(sizeof(int)*n_void);
+
+	int count=0,ii;
+	while(count<=n_water){
+		ii=MT01(engine);
+		if(cells[ii].phs==0){
+		       cells[ii].phs=1;
+		       cells[ii].phs_bff=1;
+		       count++;
+		};
+	}
+
+	int iw=0,iv=0;
+	for(int i=0;i<ncell;i++){
+		if(cells[i].phs==0) indx_v[iv++]=i;
+		if(cells[i].phs==1) indx_w[iw++]=i;
+	};
+	printf("ncell=%d\n",ncell);
+	printf("n_water=%d, n_void=%d\n",n_water,n_void);
+	printf("iw=%d, iv=%d\n",iw,iv);
+	return(n_water);
+};
+void PoreCells::load_gmm(
+	double th	// contact angle in degree
+){
+	mtrl.load(th);
+	mtrl.print_gmm();
+	mtrl.normalize();
+	mtrl.print_gmm();
+};
+double PoreCells::cell_energy(int iad){
+
+	Cell *cell_i,*cell_j;
+
+	int iphs,jphs;
+	int k,nc;
+	double Erg;
+
+	cell_i=cells+iad;
+	nc=cell_i->nc;
+	iphs=cell_i->phs;
+	Erg=0.0;
+	for(k=0;k<nc;k++){
+		cell_j=cell_i->cncl[k];
+		jphs=cell_j->phs;
+		Erg+=mtrl.gmm[iphs][jphs];
+	}
+	Erg+=(8-nc)*mtrl.gmm[iphs][2];
+	return(Erg*0.5);
+};
+double PoreCells::total_energy(){
+	Etot=0.0;
+	double dE;
+	for(int i=0;i<ncell;i++){
+		dE=cell_energy(i);
+	       	Etot+=dE;
+		cells[i].erg=dE;
+	}
+	return(Etot);
+};
+double PoreCells::swap(int id, int jd){
+
+	cells[id].phs_bff=cells[id].phs;
+	cells[id].erg_bff=cells[id].erg;
+
+	cells[jd].phs_bff=cells[jd].phs;
+	cells[jd].erg_bff=cells[jd].erg;
+
+	int itmp;
+	itmp=cells[id].phs;
+	cells[id].phs=cells[jd].phs;
+	cells[jd].phs=itmp;
+
+	double Ei,Ej,dEi,dEj;
+	Ei=cell_energy(id);
+	Ej=cell_energy(jd);
+
+	dEi=Ei-cells[id].erg;
+	dEj=Ej-cells[jd].erg;
+
+	cells[id].erg=Ei;
+	cells[jd].erg=Ej;
+
+	return(dEi+dEj);
+	
+};
+void PoreCells::reject_swap(int id, int jd){
+
+	cells[id].phs=cells[id].phs_bff;
+	cells[id].erg=cells[id].erg_bff;
+	cells[jd].phs=cells[jd].phs_bff;
+	cells[jd].erg=cells[jd].erg_bff;
+
+};
+
+void PoreCells::MC_stepping(){
+	int i,j,itmp;
+	int id,jd;
+	double dE;
+	std::mt19937_64 engine(-2);
+	std::uniform_int_distribution<int>MTv(0,n_void);
+	std::uniform_int_distribution<int>MTw(0,n_water);
+	double E0=Etot;
+
+	for(i=0;i<n_water;i++){
+		id=indx_w[i];
+		j=MTv(engine);
+		jd=indx_v[j];
+		dE=swap(id,jd);
+		if(dE>0.0){	
+			reject_swap(id,jd);
+		}else{
+			itmp=indx_w[i];
+			indx_w[i]=indx_v[j];
+			indx_v[j]=itmp;
+			Etot+=dE;
+		};
+	};
+
+	printf("Etot(initial)=%lf\n",E0);
+	printf("Etot(final  )=%lf\n",Etot);
+	for(i=0;i<n_void;i++){
+		id=indx_v[i];
+		j=MTw(engine);
+		jd=indx_w[j];
+		dE=swap(id,jd);
+		if(dE>0.0){	
+			reject_swap(id,jd);
+		}else{
+			itmp=indx_v[i];
+			indx_v[i]=indx_w[j];
+			indx_w[j]=itmp;
+			Etot+=dE;
+		};
+	};
+	printf("Etot(final  )=%lf\n",Etot);
+};
+void PoreCells::write_phs(){
+
+	FILE *fp;
+	int i,ix,iy,ID;
+	double xx,yy;
+
+	fp=fopen("kcell_w.out","w");
+	for(i=0;i<n_water;i++){
+		ID=cells[indx_w[i]].ID;
+		l2ij(ID,&ix,&iy);
+		xx=Xa[0]+(ix+0.5)*dx[0];
+		yy=Xa[1]+(iy+0.5)*dx[1];
+		fprintf(fp,"%lf %lf\n",xx,yy);
+	};
+	fclose(fp);
+
+	fp=fopen("kcell_v.out","w");
+	for(i=0;i<n_void;i++){
+		ID=cells[indx_v[i]].ID;
+		l2ij(ID,&ix,&iy);
+		xx=Xa[0]+(ix+0.5)*dx[0];
+		yy=Xa[1]+(iy+0.5)*dx[1];
+		fprintf(fp,"%lf %lf\n",xx,yy);
+	};
+	fclose(fp);
+};
+
 int main(){
 
-	printf("start program\n");
+
 	Solid sld;
 
 	int Lev=9;	// Quad-tree height
@@ -170,11 +422,16 @@ int main(){
 	sld.bbox.setup(Xa,Wd); // set bounding box
 
 	PoreCells Pcll;
-	Pcll.qp0.refine[0]=true;
-	Pcll.qp0.show_prms();
-	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox);
-	Pcll.connect();
+	Pcll.load_gmm(60.0);
+	Pcll.qp0.refine[0]=true;	// set parameter to refine pore space plus boundary
+	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
+	Pcll.connect(); // establish connection among pore coverning cells
+	double Sr=0.5;	// degree of saturation
+	Pcll.init(Sr);	// initialize phase distribution
+	printf("total energy=%lf\n",Pcll.total_energy());
 
+	Pcll.MC_stepping();
+	Pcll.write_phs();
 	//Pcll.draw();
 	return(0);
 };
