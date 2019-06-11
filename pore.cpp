@@ -3,6 +3,10 @@
 #include<random>
 #include"set2d.h"
 #include"vec2.h"
+#ifndef __TCNTRL__
+	#define __TCNTRL__
+	#include "tcntrl.h"
+#endif
 
 using namespace std;
 //---------------------------------------------------------------------------------
@@ -52,7 +56,7 @@ class PoreCells:public Tree4{
 		double Etot;	// total interfacial energy
 		double swap(int id, int jd); // swap cell id & jd tempralily
 		void reject_swap(int id, int jd); // apply swap 
-		void MC_stepping();	// Monte Carlo stepping 
+		double MC_stepping(Temp_Hist TH);	// Monte Carlo stepping 
 		void write_phs();
 	private:
 };
@@ -338,13 +342,14 @@ void PoreCells::reject_swap(int id, int jd){
 
 };
 
-void PoreCells::MC_stepping(){
+double PoreCells::MC_stepping(Temp_Hist TH){
 	int i,j,itmp;
 	int id,jd;
-	double dE;
-	std::mt19937_64 engine(-2);
+	double dE,prb;
+	static std::mt19937_64 engine(-2);
 	std::uniform_int_distribution<int>MTv(0,n_void);
 	std::uniform_int_distribution<int>MTw(0,n_water);
+	std::uniform_real_distribution<double>Urnd(0.0,1.0);
 	double E0=Etot;
 
 	for(i=0;i<n_water;i++){
@@ -352,33 +357,36 @@ void PoreCells::MC_stepping(){
 		j=MTv(engine);
 		jd=indx_v[j];
 		dE=swap(id,jd);
-		if(dE>0.0){	
-			reject_swap(id,jd);
-		}else{
+		prb=exp(-dE/TH.Temp);
+		if(Urnd(engine)<=prb){
 			itmp=indx_w[i];
 			indx_w[i]=indx_v[j];
 			indx_v[j]=itmp;
 			Etot+=dE;
+		}else{
+			reject_swap(id,jd);
 		};
 	};
 
-	printf("Etot(initial)=%lf\n",E0);
-	printf("Etot(final  )=%lf\n",Etot);
+	//printf("Etot(initial)=%lf\n",E0);
+	//printf("Etot(final  )=%lf\n",Etot);
 	for(i=0;i<n_void;i++){
 		id=indx_v[i];
 		j=MTw(engine);
 		jd=indx_w[j];
 		dE=swap(id,jd);
-		if(dE>0.0){	
-			reject_swap(id,jd);
-		}else{
+		prb=exp(-dE/TH.Temp);
+		if(Urnd(engine)<=prb){
 			itmp=indx_v[i];
 			indx_v[i]=indx_w[j];
 			indx_w[j]=itmp;
 			Etot+=dE;
+		}else{
+			reject_swap(id,jd);
 		};
 	};
-	printf("Etot(final  )=%lf\n",Etot);
+	printf("Etot=%lf\n",Etot);
+	return(Etot-E0);
 };
 void PoreCells::write_phs(){
 
@@ -422,7 +430,7 @@ int main(){
 	sld.bbox.setup(Xa,Wd); // set bounding box
 
 	PoreCells Pcll;
-	Pcll.load_gmm(60.0);
+	Pcll.load_gmm(30.0);
 	Pcll.qp0.refine[0]=true;	// set parameter to refine pore space plus boundary
 	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
 	Pcll.connect(); // establish connection among pore coverning cells
@@ -430,7 +438,17 @@ int main(){
 	Pcll.init(Sr);	// initialize phase distribution
 	printf("total energy=%lf\n",Pcll.total_energy());
 
-	Pcll.MC_stepping();
+
+	double T1=1.e0,T2=1.e-06;
+	int nstep=300;
+	Temp_Hist TH(T1,T2,nstep);
+
+	double dE;
+	while(TH.cont_iteration){
+		dE=Pcll.MC_stepping(TH);
+		printf("T=%lf, dE=%lf\n",TH.Temp,dE);
+		TH.inc_Temp_exp();
+	};
 	Pcll.write_phs();
 	//Pcll.draw();
 	return(0);

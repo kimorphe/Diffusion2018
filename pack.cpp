@@ -7,7 +7,7 @@
 #include <random>
 #include "set2d.h"
 #ifndef __TCNTRL__
-	#define _TCNTRL
+	#define __TCNTRL__
 	#include "tcntrl.h"
 #endif
 
