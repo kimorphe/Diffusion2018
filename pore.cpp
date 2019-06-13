@@ -7,6 +7,10 @@
 	#define __TCNTRL__
 	#include "tcntrl.h"
 #endif
+#ifndef __GRIDL__
+	#define __GRID__
+	#include "grid.h"
+#endif
 
 using namespace std;
 //---------------------------------------------------------------------------------
@@ -29,7 +33,7 @@ class Cell{
 		Cell();	// constructuor
 		int ID;		// linear index for 2D Grid
 		int iad;	// address in PoreCells[ncell]
-		int phs;	// 0 = solid, 1 = fluid, 2 = void
+		int phs;	// 0=gas, 1=fluid, 2=solid 
 		int phs_bff;
 		double erg;
 		double erg_bff;
@@ -58,6 +62,8 @@ class PoreCells:public Tree4{
 		void reject_swap(int id, int jd); // apply swap 
 		double MC_stepping(Temp_Hist TH);	// Monte Carlo stepping 
 		void write_phs();
+		int count_grids();
+		int grid_type(int i,int j);
 	private:
 };
 //---------------------------------------------------------------------------------
@@ -139,7 +145,7 @@ void PoreCells::setup(
 	printf("ncell=%d\n",ncell);
 	cells=(Cell *)malloc(sizeof(Cell)*ncell); // allocate memory
 	for(i=0;i<ncell;i++){
-		cells[i].phs=0;
+		cells[i].phs=0;	// all cells set to gas phase
 		cells[i].phs_bff=0;
 	};
 
@@ -190,6 +196,7 @@ void PoreCells::l2ij(int l, int *i, int *j){
 	(*j)=l%Ny;
 };
 int PoreCells::find(int id){
+
 	if(id < cells[0].ID) return(-1);
 	if(id > cells[ncell-1].ID) return(-1);
 	int i1=0;
@@ -199,8 +206,8 @@ int PoreCells::find(int id){
 	if(cells[i1].ID==id) return(i1);
 	if(cells[i2].ID==id) return(i2);
 
-	while(i2-i1>0){
-		im=(i1+i2)*0.5;
+	while(i2-i1>1){
+		im=floor((i1+i2)*0.5);
 		if(cells[im].ID==id) return(im);
 		if(cells[im].ID>id){
 			i2=im;
@@ -208,6 +215,8 @@ int PoreCells::find(int id){
 			i1=im;
 		}
 	};
+	if(cells[i1].ID==id) return(i1);
+	if(cells[i2].ID==id) return(i2);
 	return(-1);
 };
 
@@ -224,7 +233,6 @@ void PoreCells::connect(){
 		for(j=0;j<cells[i].nc;j++){
 			iad=find(cells[i].cnct[j]);
 			cells[i].cncl[j]=cells+iad;
-			//fprintf(fp," %d (%d)",cells[i].cnct[j],iad);
 			l2ij(cells[i].cncl[j]->ID,&jx,&jy);
 			ixd=abs(ix-jx);
 			if(Nx-ixd < ixd) ixd=Nx-ixd;
@@ -253,7 +261,7 @@ int PoreCells::init(double sr){
 	while(count<=n_water){
 		ii=MT01(engine);
 		if(cells[ii].phs==0){
-		       cells[ii].phs=1;
+		       cells[ii].phs=1;	// set to fluid phase
 		       cells[ii].phs_bff=1;
 		       count++;
 		};
@@ -368,8 +376,6 @@ double PoreCells::MC_stepping(Temp_Hist TH){
 		};
 	};
 
-	//printf("Etot(initial)=%lf\n",E0);
-	//printf("Etot(final  )=%lf\n",Etot);
 	for(i=0;i<n_void;i++){
 		id=indx_v[i];
 		j=MTw(engine);
@@ -385,7 +391,6 @@ double PoreCells::MC_stepping(Temp_Hist TH){
 			reject_swap(id,jd);
 		};
 	};
-	printf("Etot=%lf\n",Etot);
 	return(Etot-E0);
 };
 void PoreCells::write_phs(){
@@ -414,6 +419,52 @@ void PoreCells::write_phs(){
 	};
 	fclose(fp);
 };
+int PoreCells::grid_type(int i, int j){
+
+	int k,l,ix,iy,nc=0;
+	int iad,phs,ityp;
+	int ngrid[3]={0,0,0}; // solid, fluid, gas
+
+	for(k=-1; k<1; k++){	
+		ix=i+k;
+		if(ix<0) ix+=Nx;
+		if(ix>=Nx) ix-=Nx;
+	for(l=-1; l<1;l++){	
+		iy=j+l;
+		if(iy<0) iy+=Ny;
+		if(iy>=Ny) iy-=Ny;
+		l=ix*Ny+iy;
+		iad=find(l);
+
+		if(iad==-1){
+			ngrid[2]++;
+		}else{
+			phs=cells[iad].phs;
+			ngrid[phs]++;
+		}
+	}
+	}
+
+	ityp=2;	// solid 
+	if(ngrid[1]>0){
+	     ityp=1;	// fluid
+	}else if(ngrid[0]>0){
+	     ityp=0;	// gas
+	}
+
+	return(ityp);
+};
+int PoreCells::count_grids(){
+	int i,j,ityp;
+	int ng=0;
+	for(i=0;i<Nx;i++){
+	for(j=0;j<Ny;j++){
+		ityp=PoreCells::grid_type(i,j);
+		if(ityp==1) ng++;
+	}
+	}
+	return(ng);
+};
 
 int main(){
 
@@ -440,16 +491,76 @@ int main(){
 
 
 	double T1=1.e0,T2=1.e-06;
-	int nstep=300;
+	int nstep=150;
 	Temp_Hist TH(T1,T2,nstep);
 
 	double dE;
 	while(TH.cont_iteration){
 		dE=Pcll.MC_stepping(TH);
-		printf("T=%lf, dE=%lf\n",TH.Temp,dE);
+		printf("%lf %lf %lf\n",TH.Temp,dE,Pcll.Etot);
 		TH.inc_Temp_exp();
 	};
 	Pcll.write_phs();
+	int ng=Pcll.count_grids();
+	printf("number of grids=%d\n",ng);
+	Grid gd(ng);
+	gd.set_grid_params(Pcll.Xa,Pcll.Xb,Pcll.Nx,Pcll.Ny);
+
+	int i,j,iad=0,ID=0;
+	for(i=0; i<Pcll.Nx; i++){
+	for(j=0; j<Pcll.Ny; j++){
+		if(Pcll.grid_type(i,j)==1){
+		       gd.NDs[iad].id=ID;
+		       gd.NDs[iad].iad=iad;
+		       iad++;
+		};
+		ID++;
+	}
+	}
+	gd.connect();
+
+	double xcod,ycod;
+
+	std::mt19937_64 engine(-5);
+	std::uniform_real_distribution<double>MT01(0.0,1.0);
+	int next,now;
+	int nwk=1,Nt=400,inc=1; 
+	
+	Node **nd0=(Node **)malloc(sizeof(Node*)*nwk);
+	FILE *fp=fopen("rw.out","w");
+	for(i=0;i<nwk;i++){
+		now=int(MT01(engine)*gd.Ng);
+		nd0[i]=&gd.NDs[now];
+	};
+
+	fprintf(fp,"%d,%d,%d\n",nwk,Nt,inc);
+	fprintf(fp,"%le,%le\n",gd.dx[0],gd.dx[1]);
+	double x0,y0;
+	double tolx=gd.dx[0]*1.001;
+	double toly=gd.dx[1]*1.001;
+	double *ofx=(double *)malloc(sizeof(double)*nwk);
+	double *ofy=(double *)malloc(sizeof(double)*nwk);
+	printf("tols=%lf %lf\n",tolx,toly);
+	for(j=0;j<Nt;j++){
+		printf("step=%d\n",j);
+		for(i=0;i<nwk;i++){
+			gd.grid_cod(nd0[i]->iad,&x0,&y0);
+
+			next=int(MT01(engine)*4)%4;
+
+			printf("nc=%d\n",nd0[i]->nc);
+			if(nd0[i]->cnct[next]!=-1){
+				nd0[i]=nd0[i]->cnds[next];
+				gd.grid_cod(nd0[i]->iad,&xcod,&ycod);
+
+				if(xcod-x0>tolx) ofx[i]-=gd.Wd[0];
+				if(x0-xcod>tolx) ofx[i]+=gd.Wd[0];
+				if(ycod-y0>toly) ofy[i]-=gd.Wd[1];
+				if(y0-ycod>toly) ofy[i]+=gd.Wd[1];
+				if(j%inc==0) fprintf(fp,"%lf,%lf\n",xcod+ofx[i],ycod+ofy[i]);
+			}
+		}
+	}
 	//Pcll.draw();
 	return(0);
 };

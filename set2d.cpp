@@ -1035,6 +1035,15 @@ void Tree4::set_grid_params(){
 	dx[1]=Wd[1]/Ny;
 	//Nx++; Ny++;
 };
+void Tree4::write_grid_params(FILE *fp){
+	fprintf(fp,"#Nx Ny (number of cells)\n");
+	fprintf(fp,"%d,%d\n",Nx,Ny);
+	fprintf(fp,"#Xa[2], Xb[2]\n");
+	fprintf(fp,"%lf,%lf\n",Xa[0],Xa[1]);
+	fprintf(fp,"%lf,%lf\n",Xb[0],Xb[1]);
+	fprintf(fp,"#dx[2]\n");
+	fprintf(fp,"%lf,%lf\n",dx[0],dx[1]);
+};
 int Tree4::grid_type(int id, int jd, int cnct[4]){
 	// 0: interior grid
 	// 1: boundary grid

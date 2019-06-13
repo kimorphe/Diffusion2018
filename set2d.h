@@ -194,6 +194,7 @@ class Tree4{
 		int nint,next,nbnd;
 		void count();
 		void set_grid_params();
+		void write_grid_params(FILE *fp);
 		int Nx,Ny;
 		double dx[2],Xa[2],Xb[2],Wd[2];
 		int grid_type(int id, int jd, int cnct[4]);

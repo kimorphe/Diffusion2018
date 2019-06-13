@@ -11,8 +11,13 @@
 	#include "tcntrl.h"
 #endif
 
-using namespace std;
+#ifndef __GRIDL__
+	#define __GRID__
+	#include "grid.h"
+#endif
 
+using namespace std;
+/*
 class Node{
 	public:
 		int iad;// data count (address in the Node class array NDs[]) 
@@ -22,13 +27,6 @@ class Node{
 		Node();	//default constructor
 		int nc;
 	private:
-};
-Node::Node(){
-	id=-1;
-	for(int i=0;i<4;i++){
-	       	cnct[i]=-1;
-		cnds[i]=NULL;
-	}
 };
 
 class Grid{
@@ -50,6 +48,13 @@ class Grid{
 		void mem_alloc();
 };
 
+Node::Node(){
+	id=-1;
+	for(int i=0;i<4;i++){
+	       	cnct[i]=-1;
+		cnds[i]=NULL;
+	}
+};
 int Grid::find(int k){
 	if(k<NDs[0].id) return(-1);
 	if(k>NDs[Ng-1].id) return(-1);
@@ -166,6 +171,7 @@ void Grid::grid_cod(int inod,double *xcod, double *ycod){
 	Grid::indx2cod(i,j,xcod,ycod);
 };
 //----------------------------------------------------------
+*/
 #if DB==4
 // Testing Grid and Node classes on which random walks will be taken
 int main(){
