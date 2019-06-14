@@ -1,12 +1,12 @@
-all: pack wet rw
+all: pack wet rwk
 
 pack: pack.o grid.o vec2.o set2d.o tcntrl.o
 	g++ -o pack pack.o grid.o vec2.o set2d.o tcntrl.o 
 
 wet: wet.o pore.o vec2.o set2d.o tcntrl.o pack.o grid.o 
 	g++ -o wet wet.o pore.o vec2.o set2d.o tcntrl.o grid.o
-rw: rw.o pore.o vec2.o set2d.o tcntrl.o pack.o grid.o 
-	g++ -o rw rw.o pore.o vec2.o set2d.o tcntrl.o grid.o
+rwk: rwk.o pore.o vec2.o set2d.o tcntrl.o pack.o grid.o 
+	g++ -o rwk rwk.o pore.o vec2.o set2d.o tcntrl.o grid.o
 
 pore.o: pore.cpp set2d.h vec2.h tcntrl.h grid.h pore.h
 	g++ -c pore.cpp
@@ -22,5 +22,5 @@ grid.o: grid.cpp grid.h tcntrl.h set2d.h
 	g++ -c grid.cpp 
 wet.o: wet.cpp tcntrl.h grid.h set2d.h pore.h
 	g++ -c wet.cpp
-rw.o: rw.cpp tcntrl.h grid.h pore.h
-	g++ -c rw.cpp
+rwk.o: rwk.cpp tcntrl.h grid.h pore.h
+	g++ -c rwk.cpp

@@ -1,0 +1,10 @@
+# Cell data file (pore coverning cell) 
+pore.dat
+# Output file (walker position)
+rwk.out
+# nwk: number of random walkers
+ 10
+# Nt: time steps
+ 1000
+# inc: output increment
+ 1
