@@ -33,7 +33,6 @@ class PoreCells:public Tree4{
 		void setup(Ellip *els,int nelp,bool set_opr, int Lev_Max,Bbox bx); // generate cells 
 		int find(int id);	// find cell having a given linear grid number(id).
 		void connect();	// establish neghboring cell connection 
-		void connect0();	// establish neghboring cell connection 
 		void l2ij(int l, int *i, int *j); // index transform ( linear to 2D index)
 		double Sr;	// degree of water saturation
 		int n_void,n_water; // number of gas and fluid cells, resp.
@@ -51,6 +50,7 @@ class PoreCells:public Tree4{
 		void write_phs();
 		int count_grids();
 		int grid_type(int i,int j);
+		int grid_loc(int i,int j);
 		void fwrite_cells(char fn[128]);
 		void load_cell_data(char fn[128]);
 	private:

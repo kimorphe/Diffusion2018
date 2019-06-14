@@ -15,43 +15,6 @@
 #include "pore.h"
 using namespace std;
 int main(){
-/*
-	Solid sld;
-
-	int Lev=9;	// Quad-tree height
-	double Wd[2]={1.0,1.0}; // Unit Cell Size
-	double Xa[2]={0.0,0.0}; // Unit Cell position (lowerleft vertex)
-	char fn[128]="solid.dat";	// solid phase data file
-	char fdat[128]="pore.dat";
-
-	sld.load(fn);	// import solid phase data
-	sld.bbox.setup(Xa,Wd); // set bounding box
-
-	PoreCells Pcll;
-	Pcll.load_gmm(30.0);
-	Pcll.qp0.refine[0]=true;	// set parameter to refine pore space plus boundary
-	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
-	//Pcll.connect0(); // establish connection among pore coverning cells
-	Pcll.connect(); // establish connection among pore coverning cells
-	double Sr=0.5;	// degree of saturation
-	Pcll.init(Sr);	// initialize phase distribution
-	printf("total energy=%lf\n",Pcll.total_energy());
-
-
-	double T1=1.e0,T2=1.e-06;
-	int nstep=100;
-	Temp_Hist TH(T1,T2,nstep);
-
-	double dE;
-	while(TH.cont_iteration){
-		dE=Pcll.MC_stepping(TH);
-		printf("%lf %lf %lf\n",TH.Temp,dE,Pcll.Etot);
-		TH.inc_Temp_exp();
-	};
-	Pcll.write_phs();
-	Pcll.fwrite_cells(fdat);
-*/
-
 	char fn[128]="pore.dat";
 	PoreCells Pcll;
 	Pcll.load_cell_data(fn);
@@ -64,7 +27,8 @@ int main(){
 	int i,j,iad=0,ID=0;
 	for(i=0; i<Pcll.Nx; i++){
 	for(j=0; j<Pcll.Ny; j++){
-		if(Pcll.grid_type(i,j)==1){
+		if(Pcll.grid_type(i,j)==1 || Pcll.grid_loc(i,j)==1){
+//		if(Pcll.grid_type(i,j)==1){
 		       gd.NDs[iad].id=ID;
 		       gd.NDs[iad].iad=iad;
 		       iad++;
@@ -95,15 +59,11 @@ int main(){
 	double toly=gd.dx[1]*1.001;
 	double *ofx=(double *)malloc(sizeof(double)*nwk);
 	double *ofy=(double *)malloc(sizeof(double)*nwk);
-	printf("tols=%lf %lf\n",tolx,toly);
 	for(j=0;j<Nt;j++){
 		printf("step=%d\n",j);
 		for(i=0;i<nwk;i++){
 			gd.grid_cod(nd0[i]->iad,&x0,&y0);
-
 			next=int(MT01(engine)*4)%4;
-
-			printf("nc=%d\n",nd0[i]->nc);
 			if(nd0[i]->cnct[next]!=-1){
 				nd0[i]=nd0[i]->cnds[next];
 				gd.grid_cod(nd0[i]->iad,&xcod,&ycod);
@@ -116,6 +76,5 @@ int main(){
 			}
 		}
 	}
-
 	return(0);
 };

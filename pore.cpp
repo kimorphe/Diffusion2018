@@ -14,61 +14,6 @@
 
 #include "pore.h"
 using namespace std;
-/*
-//---------------------------------------------------------------------------------
-class Material{
-	public:
-		double gmm[3][3];	// interfacial energy (0:gas, 1:fluid, 2: solid)
-		double thE;		// contact angle
-		void load(double th); 	// set gmm values 
-		double gmm_max;		// maximum value in gmm
-		void  normalize();	// normalize gmm
-		void  print_gmm(); // print interfacial energy
-		double erg;	// cell energy
-};
-class Cell{
-	public:
-		QPatch *qp0;
-		int cnct[8];//connected ?
-		Cell *cncl[8]; //pointer to connected cells
-		int nc;	// number  of connected cells
-		Cell();	// constructuor
-		int ID;		// linear index for 2D Grid
-		int iad;	// address in PoreCells[ncell]
-		int phs;	// 0=gas, 1=fluid, 2=solid 
-		int phs_bff;
-		double erg;
-		double erg_bff;
-	private:
-};
-class PoreCells:public Tree4{
-	public:
-		int ncell; 	// number of cells
-		Cell *cells;	// pointer(array) to cell class instances
-		PoreCells();	// constructor
-		void setup(Ellip *els,int nelp,bool set_opr, int Lev_Max,Bbox bx); // generate cells 
-		int find(int id);	// find cell having a given linear grid number(id).
-		void connect();	// establish neghboring cell connection 
-		void l2ij(int l, int *i, int *j); // index transform ( linear to 2D index)
-		double Sr;	// degree of water saturation
-		int n_void,n_water; // number of gas and fluid cells, resp.
-		int init(double sr); // initialize phase distribution
-		int *indx_w;	// index set of fluid phase
-		int *indx_v;	// index set of gas phase
-		double cell_energy(int iad); // evaluate interfacial energy/cell
-		double total_energy(); // evaluate total interfacial energy
-		Material mtrl;	// material constants (interfaceial energy)
-		void load_gmm(double th); // load gmm data (th = fluid/solid contact angle)
-		double Etot;	// total interfacial energy
-		double swap(int id, int jd); // swap cell id & jd tempralily
-		void reject_swap(int id, int jd); // apply swap 
-		double MC_stepping(Temp_Hist TH);	// Monte Carlo stepping 
-		void write_phs();
-		int count_grids();
-		int grid_type(int i,int j);
-	private:
-};
-*/
 //---------------------------------------------------------------------------------
 void Material::load(
 		double th // contact angle in deg
@@ -165,31 +110,6 @@ void PoreCells::setup(
 			cells[iad].iad=iad;	// data address in cells[iad];
 			cells[iad].bnd=false;
 			if(ityp==1) cells[iad].bnd=true;
-			/*-------------------------------------------
-			cells[iad].nc=0;
-			k=0;
-			for(l=-1;l<=1;l++){
-				xg[0]=xf[0]+l*dx[0];
-				ix=i+l;
-				if(ix<0) ix+=Nx;
-				if(ix>=Nx) ix-=Nx;
-			for(m=-1;m<=1;m++){
-				if((l*l+m*m)==0) continue;
-				iy=j+m;
-				if(iy<0) iy+=Ny;
-				if(iy>=Ny) iy-=Ny;
-
-				xg[1]=xf[1]+m*dx[1];
-				jtyp=QtreeFind(&qp0,xg);
-				if(jtyp>0){
-					cells[iad].cnct[k]=ix*Ny+iy;	// linear grid index
-					cells[iad].nc++;
-					k++;
-				}
-			}	// end_m
-			}	// end_l
-			*/
-			//-------------------------------------------
 			iad++;
 		}	// end if
 		isum++;
@@ -260,32 +180,6 @@ void PoreCells::connect(){
 	fclose(fp);
 };
 
-void PoreCells::connect0(){
-	FILE *fp=fopen("temp0.out","w");
-	int i,j,iad;
-	int ix,iy;
-	int jx,jy;
-	int nrm,ixd,iyd;
-	for(i=0;i<ncell;i++){
-		fprintf(fp,"cell no.=%d, ID=%d\n",i,cells[i].ID);
-		fprintf(fp," number of connected nodes=%d\n",cells[i].nc);
-		l2ij(cells[i].ID,&ix,&iy);
-		for(j=0;j<cells[i].nc;j++){
-			iad=find(cells[i].cnct[j]);
-			cells[i].cncl[j]=cells+iad;
-			l2ij(cells[i].cncl[j]->ID,&jx,&jy);
-			ixd=abs(ix-jx);
-			if(Nx-ixd < ixd) ixd=Nx-ixd;
-			iyd=abs(iy-jy);
-			if(Ny-iyd < iyd) iyd=Ny-iyd;
-			nrm=ixd+iyd;
-			fprintf(fp," %d",nrm);
-			if(nrm>2) printf("connectivity error !");
-		};
-		fprintf(fp,"\n");
-	}
-	fclose(fp);
-};
 int PoreCells::init(double sr){
 
 	std::mt19937_64 engine(-2);
@@ -513,25 +407,61 @@ int PoreCells::grid_type(int i, int j){
 	     ityp=0;	// gas
 	}
 
-	return(ityp);
+	return(ityp);	// 0:gas, 1:fluid, 2:solid
 };
 int PoreCells::count_grids(){
-	int i,j,ityp;
+	int i,j,ityp,jtyp;
 	int ng=0;
 	for(i=0;i<Nx;i++){
 	for(j=0;j<Ny;j++){
 		ityp=PoreCells::grid_type(i,j);
-		if(ityp==1) ng++;
+		jtyp=PoreCells::grid_loc(i,j);
+		if((ityp==1) || (jtyp==1)) ng++;
+//		if( ityp==1 ) ng++;
 	}
 	}
 	return(ng);
 };
+int PoreCells::grid_loc(int i, int j){
+
+	int k,l,ix,iy;
+	int iad,ityp;
+	int ngrid[3]={0,0,0}; // int, bnd, ext (relative to solid phase cell)
+
+	for(k=-1; k<1; k++){	
+		ix=i+k;
+		if(ix<0) ix+=Nx;
+		if(ix>=Nx) ix-=Nx;
+	for(l=-1; l<1;l++){	
+		iy=j+l;
+		if(iy<0) iy+=Ny;
+		if(iy>=Ny) iy-=Ny;
+		l=ix*Ny+iy;
+		iad=find(l);
+
+		if(iad==-1){
+			ngrid[0]++;	// interior point (solid)
+		}else if(cells[iad].bnd){
+			ngrid[1]++;	// boundary point (solid/pore)
+		}else{
+			ngrid[2]++;	// exterior point (pore)
+		}
+	}
+	}
+
+	ityp=0;	// interior point (solid)
+	if(ngrid[1]>0){
+	     ityp=1;	// boundary point (solid/pore interface) 
+	}else if(ngrid[0]>0){
+	     ityp=0;	// exterior point (pore) 
+	}
+
+	return(ityp);	// 0:interior, 1:interfacial , 2:exterior points 
+};
 void PoreCells::load_cell_data(char fn[128]){
 	FILE *fp=fopen(fn,"r");
 	char cbff[128];
-
 	double th;
-//	double Xa[2],Xb[2];
 
 	fgets(cbff,128,fp);
 	fscanf(fp,"%lf\n",&th);
@@ -569,108 +499,3 @@ void PoreCells::load_cell_data(char fn[128]){
 
 	fclose(fp);
 };
-/*
-int main(){
-
-
-	Solid sld;
-
-	int Lev=9;	// Quad-tree height
-	double Wd[2]={1.0,1.0}; // Unit Cell Size
-	double Xa[2]={0.0,0.0}; // Unit Cell position (lowerleft vertex)
-	char fn[128]="solid.dat";	// solid phase data file
-	char fdat[128]="pore.dat";
-
-	sld.load(fn);	// import solid phase data
-	sld.bbox.setup(Xa,Wd); // set bounding box
-
-	PoreCells Pcll;
-	Pcll.load_gmm(30.0);
-	Pcll.qp0.refine[0]=true;	// set parameter to refine pore space plus boundary
-	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
-	//Pcll.connect(); // establish connection among pore coverning cells
-	Pcll.connect(); // establish connection among pore coverning cells
-	double Sr=0.5;	// degree of saturation
-	Pcll.init(Sr);	// initialize phase distribution
-	printf("total energy=%lf\n",Pcll.total_energy());
-
-
-	double T1=1.e0,T2=1.e-06;
-	int nstep=100;
-	Temp_Hist TH(T1,T2,nstep);
-
-	double dE;
-	while(TH.cont_iteration){
-		dE=Pcll.MC_stepping(TH);
-		printf("%lf %lf %lf\n",TH.Temp,dE,Pcll.Etot);
-		TH.inc_Temp_exp();
-	};
-	Pcll.write_phs();
-	Pcll.fwrite_cells(fdat);
-
-
-
-	int ng=Pcll.count_grids();
-	printf("number of grids=%d\n",ng);
-	Grid gd(ng);
-	gd.set_grid_params(Pcll.Xa,Pcll.Xb,Pcll.Nx,Pcll.Ny);
-
-	int i,j,iad=0,ID=0;
-	for(i=0; i<Pcll.Nx; i++){
-	for(j=0; j<Pcll.Ny; j++){
-		if(Pcll.grid_type(i,j)==1){
-		       gd.NDs[iad].id=ID;
-		       gd.NDs[iad].iad=iad;
-		       iad++;
-		};
-		ID++;
-	}
-	}
-	gd.connect();
-
-	double xcod,ycod;
-
-	std::mt19937_64 engine(-5);
-	std::uniform_real_distribution<double>MT01(0.0,1.0);
-	int next,now;
-	int nwk=1,Nt=400,inc=1; 
-	
-	Node **nd0=(Node **)malloc(sizeof(Node*)*nwk);
-	FILE *fp=fopen("rw.out","w");
-	for(i=0;i<nwk;i++){
-		now=int(MT01(engine)*gd.Ng);
-		nd0[i]=&gd.NDs[now];
-	};
-
-	fprintf(fp,"%d,%d,%d\n",nwk,Nt,inc);
-	fprintf(fp,"%le,%le\n",gd.dx[0],gd.dx[1]);
-	double x0,y0;
-	double tolx=gd.dx[0]*1.001;
-	double toly=gd.dx[1]*1.001;
-	double *ofx=(double *)malloc(sizeof(double)*nwk);
-	double *ofy=(double *)malloc(sizeof(double)*nwk);
-	printf("tols=%lf %lf\n",tolx,toly);
-	for(j=0;j<Nt;j++){
-		printf("step=%d\n",j);
-		for(i=0;i<nwk;i++){
-			gd.grid_cod(nd0[i]->iad,&x0,&y0);
-
-			next=int(MT01(engine)*4)%4;
-
-			printf("nc=%d\n",nd0[i]->nc);
-			if(nd0[i]->cnct[next]!=-1){
-				nd0[i]=nd0[i]->cnds[next];
-				gd.grid_cod(nd0[i]->iad,&xcod,&ycod);
-
-				if(xcod-x0>tolx) ofx[i]-=gd.Wd[0];
-				if(x0-xcod>tolx) ofx[i]+=gd.Wd[0];
-				if(ycod-y0>toly) ofy[i]-=gd.Wd[1];
-				if(y0-ycod>toly) ofy[i]+=gd.Wd[1];
-				if(j%inc==0) fprintf(fp,"%lf,%lf\n",xcod+ofx[i],ycod+ofy[i]);
-			}
-		}
-	}
-	//Pcll.draw();
-	return(0);
-};
-*/

@@ -144,7 +144,6 @@ void Grid::connect(){
 				NDs[iad].nc++;
 			};
 		}
-		printf("nc=%d\n",NDs[iad].nc);
 	};
 };
 void Grid::l2cod(int l,double *x,double *y){
