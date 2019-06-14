@@ -7,12 +7,14 @@
 	#define __TCNTRL__
 	#include "tcntrl.h"
 #endif
-#ifndef __GRIDL__
+#ifndef __GRID__
 	#define __GRID__
 	#include "grid.h"
 #endif
 
+#include "pore.h"
 using namespace std;
+/*
 //---------------------------------------------------------------------------------
 class Material{
 	public:
@@ -66,6 +68,7 @@ class PoreCells:public Tree4{
 		int grid_type(int i,int j);
 	private:
 };
+*/
 //---------------------------------------------------------------------------------
 void Material::load(
 		double th // contact angle in deg
@@ -160,8 +163,10 @@ void PoreCells::setup(
 		if(ityp>0){
 			cells[iad].ID=isum;	// linear grid index 
 			cells[iad].iad=iad;	// data address in cells[iad];
+			cells[iad].bnd=false;
+			if(ityp==1) cells[iad].bnd=true;
+			/*-------------------------------------------
 			cells[iad].nc=0;
-			//-------------------------------------------
 			k=0;
 			for(l=-1;l<=1;l++){
 				xg[0]=xf[0]+l*dx[0];
@@ -183,6 +188,7 @@ void PoreCells::setup(
 				}
 			}	// end_m
 			}	// end_l
+			*/
 			//-------------------------------------------
 			iad++;
 		}	// end if
@@ -222,6 +228,40 @@ int PoreCells::find(int id){
 
 void PoreCells::connect(){
 	FILE *fp=fopen("temp.out","w");
+	int ic;
+	int i,j,k,l,m;
+	int ix,iy,id,iad;
+	for(ic=0; ic<ncell;ic++){
+		l2ij(cells[ic].ID,&i,&j);
+		m=0;
+		cells[ic].nc=0;
+		for(k=-1; k<=1; k++){
+			ix=i+k;
+			if(ix<0) ix+=Nx;
+			if(ix>=Nx) ix-=Nx;
+		for(l=-1; l<=1; l++){
+			if((k*k+l*l)==0) continue;
+			iy=j+l;
+			if(iy<0) iy+=Ny;
+			if(iy>=Ny) iy-=Ny;
+			id=ix*Ny+iy;
+			iad=find(id);
+			if(iad!=-1){
+				cells[ic].cnct[m]=iad;
+				cells[ic].nc++;
+				cells[ic].cncl[m]=cells+iad;
+				m++;
+			};
+		}
+		}
+		fprintf(fp,"cell no.=%d, ID=%d\n",ic,cells[ic].ID);
+		fprintf(fp," number of connected nodes=%d\n",cells[ic].nc);
+	};
+	fclose(fp);
+};
+
+void PoreCells::connect0(){
+	FILE *fp=fopen("temp0.out","w");
 	int i,j,iad;
 	int ix,iy;
 	int jx,jy;
@@ -419,6 +459,27 @@ void PoreCells::write_phs(){
 	};
 	fclose(fp);
 };
+void PoreCells::fwrite_cells(char fn[128]){
+	double PI=4.0*atan(1.0);
+	FILE *fp=fopen(fn,"w");
+	fprintf(fp,"# thE (contact angle [deg])\n");
+	fprintf(fp,"%lf\n",mtrl.thE/PI*180.0);
+	fprintf(fp,"# Sr (degree of saturation)\n");
+	fprintf(fp,"%lf\n",Sr);
+
+	fprintf(fp,"# Xa[2], Xb[2]\n");
+	fprintf(fp,"%lf, %lf\n",Xa[0],Xa[1]);
+	fprintf(fp,"%lf, %lf\n",Xb[0],Xb[1]);
+	fprintf(fp,"# Nx, Ny\n");
+	fprintf(fp,"%d, %d\n",Nx,Ny);
+	fprintf(fp,"# ncell (number of fluid + gas cells)\n");
+	fprintf(fp,"%d\n",ncell);
+	fprintf(fp,"# Global cell No. (ID), phase(0: gas, 1:fluid), boundary cell (1:True,0:False)\n");
+	for(int iad=0;iad<ncell;iad++){
+		fprintf(fp,"%d %d %d\n",cells[iad].ID, cells[iad].phs,cells[iad].bnd);
+	};
+	fclose(fp);
+};
 int PoreCells::grid_type(int i, int j){
 
 	int k,l,ix,iy,nc=0;
@@ -465,7 +526,50 @@ int PoreCells::count_grids(){
 	}
 	return(ng);
 };
+void PoreCells::load_cell_data(char fn[128]){
+	FILE *fp=fopen(fn,"r");
+	char cbff[128];
 
+	double th;
+//	double Xa[2],Xb[2];
+
+	fgets(cbff,128,fp);
+	fscanf(fp,"%lf\n",&th);
+	load_gmm(th);
+
+	fgets(cbff,128,fp);
+	fscanf(fp,"%lf\n",&Sr);
+	fgets(cbff,128,fp);
+	fscanf(fp,"%lf, %lf\n",Xa,Xa+1);
+	fscanf(fp,"%lf, %lf\n",Xb,Xb+1);
+
+	fgets(cbff,128,fp);
+	fscanf(fp,"%d, %d\n",&Nx,&Ny);
+
+	Wd[0]=Xb[0]-Xa[0];
+	Wd[1]=Xb[1]-Xa[1];
+	dx[0]=Wd[0]/Nx;
+	dx[1]=Wd[1]/Ny;
+
+	fgets(cbff,128,fp);
+	fscanf(fp,"%d\n",&ncell);
+	fgets(cbff,128,fp);
+
+	cells=(Cell *)malloc(sizeof(Cell)*ncell); // allocate memory
+
+	int ID,phs,bnd;
+	for(int i=0;i<ncell;i++){
+		fscanf(fp,"%d %d %d\n",&ID, &phs, &bnd);
+		cells[i].ID=ID;
+		cells[i].phs=phs;
+		cells[i].bnd=true;
+		if(bnd==0) cells[i].bnd=false;
+	};
+
+
+	fclose(fp);
+};
+/*
 int main(){
 
 
@@ -475,8 +579,8 @@ int main(){
 	double Wd[2]={1.0,1.0}; // Unit Cell Size
 	double Xa[2]={0.0,0.0}; // Unit Cell position (lowerleft vertex)
 	char fn[128]="solid.dat";	// solid phase data file
+	char fdat[128]="pore.dat";
 
-	puts(fn);
 	sld.load(fn);	// import solid phase data
 	sld.bbox.setup(Xa,Wd); // set bounding box
 
@@ -484,6 +588,7 @@ int main(){
 	Pcll.load_gmm(30.0);
 	Pcll.qp0.refine[0]=true;	// set parameter to refine pore space plus boundary
 	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
+	//Pcll.connect(); // establish connection among pore coverning cells
 	Pcll.connect(); // establish connection among pore coverning cells
 	double Sr=0.5;	// degree of saturation
 	Pcll.init(Sr);	// initialize phase distribution
@@ -491,7 +596,7 @@ int main(){
 
 
 	double T1=1.e0,T2=1.e-06;
-	int nstep=150;
+	int nstep=100;
 	Temp_Hist TH(T1,T2,nstep);
 
 	double dE;
@@ -501,6 +606,10 @@ int main(){
 		TH.inc_Temp_exp();
 	};
 	Pcll.write_phs();
+	Pcll.fwrite_cells(fdat);
+
+
+
 	int ng=Pcll.count_grids();
 	printf("number of grids=%d\n",ng);
 	Grid gd(ng);
@@ -564,3 +673,4 @@ int main(){
 	//Pcll.draw();
 	return(0);
 };
+*/
