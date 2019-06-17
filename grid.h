@@ -6,6 +6,15 @@ class Node{
 		Node *cnds[4];	// connected nodes 
 		Node();	//default constructor
 		int nc;
+		double x0,y0;
+	private:
+};
+class Walker{	// Random Walker
+	public:
+		Node *nd0;
+		double x0,y0;
+		double xn,yn;
+		int ofx,ofy;
 	private:
 };
 class Grid{
@@ -26,6 +35,16 @@ class Grid{
 		void l2ij(int l, int *i, int *j);
 		void grid_cod(int inod,double *xcod, double *ycod);
 		void connect();
+		int nwk;	// number of random walkers
+		Walker *wks;	// random walkers
+		void setup_walkers(int n, int sd);
+		std::mt19937_64 engine;
+		std::uniform_int_distribution<> irnd3;
+		void init_rand(int seed);
+		void rwk();
+		double tolx,toly;
+		void write_wks(char fname[128]);
+		double mean_u2();
 	private:
 		void mem_alloc();
 };

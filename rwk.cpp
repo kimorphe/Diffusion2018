@@ -14,12 +14,14 @@
 
 #include "pore.h"
 using namespace std;
+
 int main(){
 	//char finp[128]="pore.dat";
 	//char fout[128]="rwk.out";
 	//int nwk=1,Nt=400,inc=1; 
 	char fdat[128];	// input  (pore cell data)
 	char fout[128]; // output (walker position)
+	char fu2b[128]; // output (square mean displacement)
 	int nwk;	// number of walkers
 	int Nt;	// time steps
 	int inc; 	// output time step increment
@@ -33,6 +35,9 @@ int main(){
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fout);
 	puts(fout);
+	fgets(cbff,128,fp);
+	fscanf(fp,"%s\n",fu2b);
+	puts(fu2b);
 
 	fgets(cbff,128,fp);
 	fscanf(fp,"%d\n",&nwk);
@@ -65,6 +70,18 @@ int main(){
 	}
 	gd.connect();
 
+	gd.setup_walkers(nwk,-5);	// setup random walkers 
+	gd.init_rand(-2);
+
+	FILE *fu=fopen(fu2b,"w");
+	for(j=0;j<Nt;j++){
+		gd.rwk();
+		if(j%inc==0) gd.write_wks(fout);
+		fprintf(fu,"%lf\n", gd.mean_u2());
+	};
+	fclose(fu);
+
+/*
 	std::mt19937_64 engine(-5);
 	std::uniform_real_distribution<double>MT01(0.0,1.0);
 	double xcod,ycod;
@@ -84,10 +101,13 @@ int main(){
 	double toly=gd.dx[1]*1.001;
 	double *ofx=(double *)malloc(sizeof(double)*nwk);
 	double *ofy=(double *)malloc(sizeof(double)*nwk);
+	double xb,yb;
 	for(j=0;j<Nt;j++){
 		if(j%10==0) printf("step=%d/%d\n",j,Nt);
+		xb=0.0; yb=0.0;
 		for(i=0;i<nwk;i++){
 			gd.grid_cod(nd0[i]->iad,&x0,&y0);
+			xcod=x0; ycod=y0;
 			next=int(MT01(engine)*4)%4;
 			if(nd0[i]->cnct[next]!=-1){
 				nd0[i]=nd0[i]->cnds[next];
@@ -98,8 +118,15 @@ int main(){
 				if(ycod-y0>toly) ofy[i]-=gd.Wd[1];
 				if(y0-ycod>toly) ofy[i]+=gd.Wd[1];
 				if(j%inc==0) fprintf(fp,"%lf,%lf\n",xcod+ofx[i],ycod+ofy[i]);
+				xcod+=ofx[i];
+				ycod+=ofy[i];
 			}
+			xb+=xcod; 
+			yb+=ycod;
 		}
+		xb/=nwk;
+		yb/=nwk;
 	}
+*/
 	return(0);
 };

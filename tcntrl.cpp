@@ -62,6 +62,7 @@ Temp_Hist::Temp_Hist(	// Constructor 1
 	istep=0;	// current step
 	cont_iteration=true;
 	p=0.1;
+	Temp=Ts;
 };
 
 Temp_Hist::Temp_Hist(	// Constructor 2
@@ -77,6 +78,7 @@ Temp_Hist::Temp_Hist(	// Constructor 2
 	nstep=n_step;
 	istep=0;	// current step
 	cont_iteration=true;
+	Temp=Ts;
 };
 double Temp_Hist::tau(){ // return normalized time
 	// Note istep,nstep is UNSIGNED LONG, which can never be negative

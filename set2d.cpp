@@ -934,6 +934,7 @@ void Tree4::setup(Ellip *els, int nelp, bool set_opr, int LevMax, Bbox bx){
 	count=0;
 	gather_leaves(&qp0,&count,leaves);
 	ready=true;
+	printf("n_leaves=%d\n",n_leaves);
 
 }
 void Tree4::setup(Solid sld,int LevMax){
@@ -975,7 +976,9 @@ void Tree4::draw(){
 		for(i=0;i<n_leaves;i++){
 			if(leaves[i].intr) leaves[i].draw(fp1);
 			if(leaves[i].bndr) leaves[i].draw(fp2);
+	//		if(leaves[i].bndr) leaves[i].draw();
 			if(leaves[i].extr) leaves[i].draw(fp3);
+//			if(leaves[i].extr) leaves[i].draw();
 		}
 		fclose(fp1);
 		fclose(fp2);

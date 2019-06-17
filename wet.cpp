@@ -69,6 +69,11 @@ int main(){
 	sld.load(fsld);	// import solid phase data
 	sld.bbox.setup(Xa,Wd); // set bounding box
 
+
+	//Tree4 tr4;
+	//tr4.setup(sld.els,sld.nelp,false,Lev,sld.bbox);
+	//tr4.draw();
+
 	PoreCells Pcll;
 	Pcll.load_gmm(thE);
 	Pcll.qp0.refine[0]=true;	// set parameter to refine pore space plus boundary
@@ -82,14 +87,15 @@ int main(){
 	int i=0;
 	double dE;
 	while(TH.cont_iteration){
+		TH.inc_Temp_exp();
 		dE=Pcll.MC_stepping(TH);
 		if(i%10==0) printf("%d/%d %10.05e %10.05e\n",i,nstep,dE,Pcll.Etot);
 		fprintf(fo,"%12.06e %12.06e %12.06e\n",TH.Temp,dE,Pcll.Etot);
-		TH.inc_Temp_exp();
 		i++;
 	};
 	Pcll.write_phs();
 	Pcll.fwrite_cells(fout);
+	Pcll.write_leaves();
 
 	return(0);
 };

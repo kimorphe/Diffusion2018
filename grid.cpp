@@ -178,6 +178,8 @@ void Grid::set_grid_params(double xa[2], double xb[2], int nx, int ny){
 	Ny=ny;
 	dx[0]=Wd[0]/Nx;
 	dx[1]=Wd[1]/Ny;
+	tolx=dx[0]*1.001;
+	toly=dx[1]*1.001;
 };
 void Grid::mem_alloc(){
 	NDs=(Node *)malloc(sizeof(Node)*Ng);
@@ -188,5 +190,69 @@ void Grid::grid_cod(int inod,double *xcod, double *ycod){
 	int i,j;
 	Grid::l2ij(id,&i,&j);
 	Grid::indx2cod(i,j,xcod,ycod);
+};
+void Grid::setup_walkers(int n, int seed){
+	nwk=n;
+	wks=(Walker *)malloc(sizeof(Walker)*nwk);
+
+	std::mt19937_64 engine(seed);
+	std::uniform_real_distribution<double>MT01(0.0,1.0);
+	int i,iad;
+	double x0,y0;
+	for(i=0;i<nwk;i++){
+		iad=int(MT01(engine)*Ng)%Ng;
+		wks[i].nd0=&NDs[iad];
+		wks[i].ofx=0;
+		wks[i].ofy=0;
+		grid_cod(wks[i].nd0->iad,&x0,&y0);
+		wks[i].x0=x0;
+		wks[i].y0=y0;
+		wks[i].xn=x0;
+		wks[i].yn=y0;
+	};
+};
+void Grid::init_rand(int seed){
+	engine=std::mt19937_64(seed);
+	irnd3=std::uniform_int_distribution<int>(0,3);
+};
+void Grid::rwk(){
+	Walker wk;
+	double xcod,ycod;
+	int iwk,next;
+	for(iwk=0;iwk<nwk;iwk++){
+		wk=wks[iwk];
+		next=irnd3(engine);	
+		if(wk.nd0->cnct[next]!=-1){
+			wk.nd0=wk.nd0->cnds[next];
+			grid_cod(wk.nd0->iad,&xcod,&ycod);
+
+			if(xcod-wk.xn > tolx) wk.ofx--;
+			if(wk.xn-xcod > tolx) wk.ofx++;
+			if(ycod-wk.yn > toly) wk.ofy--;
+			if(wk.yn-ycod > toly) wk.ofy++;
+			wk.xn=xcod;
+			wk.yn=ycod;
+			wks[iwk]=wk;
+		}
+	};
+};
+void Grid::write_wks(char fname[128]){
+	static FILE *fp=fopen(fname,"w");
+	Walker wk;
+	for(int iwk=0; iwk<nwk; iwk++){
+		wk=wks[iwk];
+		fprintf(fp,"%lf %lf\n",wk.xn+wk.ofx*Wd[0], wk.yn+wk.ofy*Wd[1]);
+	}
+};
+double Grid::mean_u2(){
+	double u2=0.0,dux,duy;
+	Walker wk;
+	for(int iwk=0; iwk<nwk; iwk++){
+		wk=wks[iwk];
+		dux=(wk.xn+wk.ofx*Wd[0]-wk.x0);
+		duy=(wk.yn+wk.ofy*Wd[1]-wk.y0);
+		u2+=(dux*dux+duy*duy);
+	};
+	return(u2/nwk);
 };
 //----------------------------------------------------------

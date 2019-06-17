@@ -81,6 +81,7 @@ void PoreCells::setup(
 ){
 	Tree4::setup(els,nelp,set_opr,Lev_Max,bx); // generate quad tree to manage the domain
 	Tree4::set_grid_params(); // set regular grid parameters
+	Tree4::draw();
 
 	double *xc,xf[2],xg[2];
 	int i,j,k,l,m;
@@ -289,8 +290,8 @@ double PoreCells::MC_stepping(Temp_Hist TH){
 	int id,jd;
 	double dE,prb;
 	static std::mt19937_64 engine(-2);
-	std::uniform_int_distribution<int>MTv(0,n_void);
-	std::uniform_int_distribution<int>MTw(0,n_water);
+	std::uniform_int_distribution<int>MTv(0,n_void-1);
+	std::uniform_int_distribution<int>MTw(0,n_water-1);
 	std::uniform_real_distribution<double>Urnd(0.0,1.0);
 	double E0=Etot;
 
@@ -498,4 +499,7 @@ void PoreCells::load_cell_data(char fn[128]){
 
 
 	fclose(fp);
+};
+void PoreCells::write_leaves(){
+	Tree4::draw();
 };
