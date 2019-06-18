@@ -38,6 +38,8 @@ void Material::load(
 	gmm_max=g10;
 	if(gmm_max< g20) gmm_max=g20;
 
+	//dE_min=g10/gmm_max/8.0;
+
 };
 void Material::normalize(){
 	int i,j;
@@ -184,7 +186,7 @@ void PoreCells::connect(){
 int PoreCells::init(double sr){
 
 	std::mt19937_64 engine(-2);
-	std::uniform_int_distribution<int>MT01(0,ncell);
+	std::uniform_int_distribution<int>MT01(0,ncell-1);
 
 	Sr=sr;
 	n_water=int(ncell*Sr);
@@ -193,7 +195,7 @@ int PoreCells::init(double sr){
 	indx_v=(int *)malloc(sizeof(int)*n_void);
 
 	int count=0,ii;
-	while(count<=n_water){
+	while(count<n_water){
 		ii=MT01(engine);
 		if(cells[ii].phs==0){
 		       cells[ii].phs=1;	// set to fluid phase
@@ -227,6 +229,7 @@ double PoreCells::cell_energy(int iad){
 	int iphs,jphs;
 	int k,nc;
 	double Erg;
+	int nb=8;	// number of neighboring cells
 
 	cell_i=cells+iad;
 	nc=cell_i->nc;
@@ -238,7 +241,7 @@ double PoreCells::cell_energy(int iad){
 		Erg+=mtrl.gmm[iphs][jphs];
 	}
 	Erg+=(8-nc)*mtrl.gmm[iphs][2];
-	return(Erg*0.5);
+	return(Erg*0.5/nb);
 };
 double PoreCells::total_energy(){
 	Etot=0.0;
@@ -285,7 +288,7 @@ void PoreCells::reject_swap(int id, int jd){
 
 };
 
-double PoreCells::MC_stepping(Temp_Hist TH){
+double PoreCells::MC_stepping(Temp_Hist TH, int *nsp){
 	int i,j,itmp;
 	int id,jd;
 	double dE,prb;
@@ -294,38 +297,44 @@ double PoreCells::MC_stepping(Temp_Hist TH){
 	std::uniform_int_distribution<int>MTw(0,n_water-1);
 	std::uniform_real_distribution<double>Urnd(0.0,1.0);
 	double E0=Etot;
+	int nswap=0;
 
-	for(i=0;i<n_water;i++){
-		id=indx_w[i];
-		j=MTv(engine);
-		jd=indx_v[j];
-		dE=swap(id,jd);
-		prb=exp(-dE/TH.Temp);
-		if(Urnd(engine)<=prb){
-			itmp=indx_w[i];
-			indx_w[i]=indx_v[j];
-			indx_v[j]=itmp;
-			Etot+=dE;
-		}else{
-			reject_swap(id,jd);
+	if(n_water <  n_void){ 
+		for(i=0;i<n_water;i++){
+			id=indx_w[i];
+			j=MTv(engine);
+			jd=indx_v[j];
+			dE=swap(id,jd);
+			prb=exp(-dE/TH.Temp);
+			if(Urnd(engine)<=prb){
+				itmp=indx_w[i];
+				indx_w[i]=indx_v[j];
+				indx_v[j]=itmp;
+				Etot+=dE;
+				nswap++;
+			}else{
+				reject_swap(id,jd);
+			};
 		};
-	};
-
-	for(i=0;i<n_void;i++){
-		id=indx_v[i];
-		j=MTw(engine);
-		jd=indx_w[j];
-		dE=swap(id,jd);
-		prb=exp(-dE/TH.Temp);
-		if(Urnd(engine)<=prb){
-			itmp=indx_v[i];
-			indx_v[i]=indx_w[j];
-			indx_w[j]=itmp;
-			Etot+=dE;
-		}else{
-			reject_swap(id,jd);
+	}else{
+		for(i=0;i<n_void;i++){
+			id=indx_v[i];
+			j=MTw(engine);
+			jd=indx_w[j];
+			dE=swap(id,jd);
+			prb=exp(-dE/TH.Temp);
+			if(Urnd(engine)<=prb){
+				itmp=indx_v[i];
+				indx_v[i]=indx_w[j];
+				indx_w[j]=itmp;
+				Etot+=dE;
+				nswap++;
+			}else{
+				reject_swap(id,jd);
+			};
 		};
-	};
+	}
+	*nsp=nswap;
 	return(Etot-E0);
 };
 void PoreCells::write_phs(){
@@ -417,8 +426,8 @@ int PoreCells::count_grids(){
 	for(j=0;j<Ny;j++){
 		ityp=PoreCells::grid_type(i,j);
 		jtyp=PoreCells::grid_loc(i,j);
-		if((ityp==1) || (jtyp==1)) ng++;
-//		if( ityp==1 ) ng++;
+//		if((ityp==1) || (jtyp==1)) ng++;
+		if( ityp==1 ) ng++;
 	}
 	}
 	return(ng);

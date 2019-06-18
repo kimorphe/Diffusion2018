@@ -11,7 +11,7 @@ git add temp_hist.inp
 # Visualization
 git add kcell.py
 # input data 
-git add DBG/*.inp
+git add DATA2/*.inp
 
 git commit 
 

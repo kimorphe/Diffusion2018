@@ -46,7 +46,7 @@ class PoreCells:public Tree4{
 		double Etot;	// total interfacial energy
 		double swap(int id, int jd); // swap cell id & jd tempralily
 		void reject_swap(int id, int jd); // apply swap 
-		double MC_stepping(Temp_Hist TH);	// Monte Carlo stepping 
+		double MC_stepping(Temp_Hist TH, int *nswap);	// Monte Carlo stepping 
 		void write_phs();
 		int count_grids();
 		int grid_type(int i,int j);

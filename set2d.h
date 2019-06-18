@@ -129,6 +129,7 @@ class Solid{
 		std::mt19937_64 mt;	// random number generator
 		std::uniform_real_distribution<> Urnd;
 		std::normal_distribution<> Grnd;
+		void set_domain(double Xa[2], double Wd[2]);
 	private:
 	protected:
 };

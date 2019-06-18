@@ -1438,6 +1438,12 @@ Solid::Solid(int n){
 	isect=(bool *)malloc(sizeof(bool)*nelp);
 	Solid::init_rand(-1);
 };
+void Solid::set_domain(double Xa[2], double Wd[2]){
+	double Xb[2];
+	Xb[0]=Xa[0]+Wd[0];
+	Xb[1]=Xa[1]+Wd[1];
+	bbox.setup(Xa,Xb);
+};
 Solid::Solid(int n, double Wd[2]){
 
 	nelp=n;

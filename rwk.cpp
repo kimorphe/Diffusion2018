@@ -59,8 +59,8 @@ int main(){
 	int i,j,iad=0,ID=0;
 	for(i=0; i<Pcll.Nx; i++){
 	for(j=0; j<Pcll.Ny; j++){
-		if(Pcll.grid_type(i,j)==1 || Pcll.grid_loc(i,j)==1){
-//		if(Pcll.grid_type(i,j)==1){
+//		if(Pcll.grid_type(i,j)==1 || Pcll.grid_loc(i,j)==1){
+		if(Pcll.grid_type(i,j)==1){
 		       gd.NDs[iad].id=ID;
 		       gd.NDs[iad].iad=iad;
 		       iad++;

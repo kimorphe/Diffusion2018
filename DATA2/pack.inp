@@ -1,0 +1,21 @@
+# output data file
+solid_tmp.dat
+# Xa[2] (REV position)
+ 0.0,0.0
+# Wd[2] (REV size)
+ 1.0,1.0
+# Lev (quad-tree height/depth)
+ 9
+# poro (design porosity )
+ 0.3
+# solid grain size (min & max diameters)
+ 0.05,0.25 
+# aspect ratio
+ 0.25,1.0
+# angle [deg]
+ 0.0,180.0
+# Ts, Te (initial and final temperatures)
+ 1.e01,1.e-06
+# Nstep (number of Monte Carlo Step)
+ 300
+

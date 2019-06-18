@@ -69,11 +69,6 @@ int main(){
 	sld.load(fsld);	// import solid phase data
 	sld.bbox.setup(Xa,Wd); // set bounding box
 
-
-	//Tree4 tr4;
-	//tr4.setup(sld.els,sld.nelp,false,Lev,sld.bbox);
-	//tr4.draw();
-
 	PoreCells Pcll;
 	Pcll.load_gmm(thE);
 	Pcll.qp0.refine[0]=true;	// set parameter to refine pore space plus boundary
@@ -84,15 +79,30 @@ int main(){
 
 	Temp_Hist TH(T1,T2,nstep);
 
-	int i=0;
-	double dE;
+	int i,j,jmax=100;
+	int n0=Pcll.ncell/2000,nswap;
+	if(n0==0) n0=1;
+	double dE,alph=0.05,dEb;
+
+	for(j=0;j<jmax;j++){
+		i=0;
+		dEb=0.0;
 	while(TH.cont_iteration){
 		TH.inc_Temp_exp();
-		dE=Pcll.MC_stepping(TH);
-		if(i%10==0) printf("%d/%d %10.05e %10.05e\n",i,nstep,dE,Pcll.Etot);
+		dE=Pcll.MC_stepping(TH,&nswap);
+//		if(i%10==0) printf("%d/%d %10.05e %10.05e\n",i,nstep,dE,Pcll.Etot);
+		dEb+=dE;
 		fprintf(fo,"%12.06e %12.06e %12.06e\n",TH.Temp,dE,Pcll.Etot);
 		i++;
 	};
+		dEb/=nstep;
+		printf("nswap/n0=%d/%d, dE(mean)=%le \n",nswap,n0,dEb);
+		if(fabs(dEb)<1.e-06) break;
+//		if(nswap<=n0) break;
+		TH.renew(alph);
+	};
+
+
 	Pcll.write_phs();
 	Pcll.fwrite_cells(fout);
 	Pcll.write_leaves();

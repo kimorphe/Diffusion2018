@@ -45,6 +45,7 @@ void Temp_Hist::load(char *fname){
 	cont_iteration=true;
 	p=0.1;
 
+	Temp=Ts;
 	fclose(fp);
 
 };
@@ -63,6 +64,14 @@ Temp_Hist::Temp_Hist(	// Constructor 1
 	cont_iteration=true;
 	p=0.1;
 	Temp=Ts;
+};
+void Temp_Hist::renew(double alph){
+
+	Tdiff*=alph;
+	Ts=Te+Tdiff;
+	istep=0;
+	cont_iteration=true;
+	Temp=Ts;	
 };
 
 Temp_Hist::Temp_Hist(	// Constructor 2

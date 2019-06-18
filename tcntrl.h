@@ -20,6 +20,7 @@ class Temp_Hist{
 		double tau(); 
 		void load(char *fname); // load Ts, Te, nstep from a file
 		int Nout;
+		void renew(double alph);
 	private:
 };
 
