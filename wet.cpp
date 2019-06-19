@@ -12,7 +12,7 @@
 
 #include "pore.h"
 using namespace std;
-int main(){
+int main(int argc, char *argv[]){
 	Solid sld;
 /*
  	int Lev=9;	// Quad-tree height
@@ -97,7 +97,7 @@ int main(){
 	};
 		dEb/=nstep;
 		printf("nswap/n0=%d/%d, dE(mean)=%le \n",nswap,n0,dEb);
-		if(fabs(dEb)<1.e-06) break;
+		if(fabs(dEb)<1.e-05) break;
 //		if(nswap<=n0) break;
 		TH.renew(alph);
 	};

@@ -186,6 +186,7 @@ void PoreCells::connect(){
 int PoreCells::init(double sr){
 
 	std::mt19937_64 engine(-2);
+//	std::mt19937_64 engine(-1);
 	std::uniform_int_distribution<int>MT01(0,ncell-1);
 
 	Sr=sr;
@@ -211,6 +212,7 @@ int PoreCells::init(double sr){
 	};
 	printf("ncell=%d\n",ncell);
 	printf("n_water=%d, n_void=%d\n",n_water,n_void);
+	printf("iv,iw=%d, %d\n",iv,iw);
 	printf("iw=%d, iv=%d\n",iw,iv);
 	return(n_water);
 };
@@ -218,9 +220,9 @@ void PoreCells::load_gmm(
 	double th	// contact angle in degree
 ){
 	mtrl.load(th);
-	mtrl.print_gmm();
+	//mtrl.print_gmm();
 	mtrl.normalize();
-	mtrl.print_gmm();
+	//mtrl.print_gmm();
 };
 double PoreCells::cell_energy(int iad){
 

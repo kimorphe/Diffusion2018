@@ -5,8 +5,8 @@ rwk.out
 # Output file (square mean displacement )
 u2b.out
 # nwk: number of random walkers
- 1000
+ 5000
 # Nt: time steps
- 10000
+ 100000
 # inc: output increment
- 1
+ 10000

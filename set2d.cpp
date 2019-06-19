@@ -1523,12 +1523,13 @@ double Solid::MC(Temp_Hist TH){
 	double dE,dE_sum=0.0;
 	double prb,alph,beta;
 	double tau=TH.tau();
-	double a1=1.0, a2=0.1;
+	//double a1=1.0, a2=0.1;
+	double a1=1.0, a2=0.2;
 	alph=(1.-tau)*a1+tau*a2;	// a1 --> a2
-	//beta=(1.-tau)*1.0+tau*0.5;	// 1.0 --> 0.5 
-	beta=1.0;
+	beta=(1.-tau)*1.0+tau*0.2;	
+	//beta=1.0;
 	for(ip=0; ip<nelp; ip++){
-		if(ip%100==0) printf("ip=%d\n",ip);
+	//	if(ip%100==0) printf("ip=%d\n",ip);
 		ux=0.0; uy=0.0; dphi=0.0;
 		if(TH.istep %2==0){
 			ux=(2.*(Urnd(mt)-0.5)*bbox.Wd[0]*0.6 )*alph;

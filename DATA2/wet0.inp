@@ -11,7 +11,7 @@ pore.dat
 # thE: Solid-fluid contact angle [deg]
  30.0
 # Sr: degree of saturation
- 0.60
+DEG_SAT
 # Temperature control
  10.e0, 1.0e-03
 # Monte Carlo step

@@ -15,10 +15,7 @@
 #include "pore.h"
 using namespace std;
 
-int main(){
-	//char finp[128]="pore.dat";
-	//char fout[128]="rwk.out";
-	//int nwk=1,Nt=400,inc=1; 
+int main(int argc, char *argv[]){
 	char fdat[128];	// input  (pore cell data)
 	char fout[128]; // output (walker position)
 	char fu2b[128]; // output (square mean displacement)
@@ -26,9 +23,14 @@ int main(){
 	int Nt;	// time steps
 	int inc; 	// output time step increment
 	char cbff[128];
+	FILE *fp;
 
 //	----------------------------------
-	FILE *fp=fopen("rwk.inp","r");
+	if(argc==1){
+		fp=fopen("rwk.inp","r");
+	}else{
+		fp=fopen(argv[1],"r");
+	};
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fdat);
 	puts(fdat);
@@ -45,6 +47,7 @@ int main(){
 	fscanf(fp,"%d\n",&Nt);
 	fgets(cbff,128,fp);
 	fscanf(fp,"%d\n",&inc);
+	printf("inc=%d\n",inc);
 	fclose(fp);
 //	----------------------------------
 
@@ -68,6 +71,7 @@ int main(){
 		ID++;
 	}
 	}
+	printf("ng=%d,iad_final=%d\n",ng,iad);
 	gd.connect();
 
 	gd.setup_walkers(nwk,-5);	// setup random walkers 

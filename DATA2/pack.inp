@@ -9,7 +9,7 @@ solid_tmp.dat
 # poro (design porosity )
  0.3
 # solid grain size (min & max diameters)
- 0.05,0.25 
+ 0.05,0.22 
 # aspect ratio
  0.25,1.0
 # angle [deg]

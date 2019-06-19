@@ -28,7 +28,6 @@ class Grain{
 		std::uniform_real_distribution<> Urnd;
 		std::normal_distribution<> Grnd;
 		void init_rand(int seed);
-//		void set_Wd(double w1,double w2);
 		void gen();
 		double ra,rb,alph,th;
 		double x,y;
@@ -41,9 +40,6 @@ void Grain::init_rand(int seed){
 	Urnd=std::uniform_real_distribution<double>(0.0,1.0); // Uniform distribution(min,max)
 	Grnd=std::normal_distribution<double>(0.0,1.0); // Normal distribution(mean,stdev)	
 };
-//void Grain::set_Wd(double w1,double w2){
-//	Wd[0]=w1; Wd[1]=w2;
-//}
 void Grain::gen(){
 	ra=0.5*(Urnd(mt)*(Drng[1]-Drng[0])+Drng[0]);
 	alph=Urnd(mt)*(Arng[1]-Arng[0])+Arng[0];
@@ -63,9 +59,10 @@ void Grain::print(){
 	printf("alph=%lf (aspect ratio)\n",alph);
 };
 #if DB==1
-int main(){
+int main(int argc, char *argv[]){
 
-	FILE *finp=fopen("pack.inp","r");
+	FILE *finp;
+	
 	FILE *fl=fopen("pack.erg","w");
 	char fn[128]="geom.dat";
 	char cbff[128],fout[128];
@@ -77,6 +74,11 @@ int main(){
 	int seed=-1;
 	double PI=4.0*atan(1.0);
 	Grain gr;
+	if(argc==1){
+		finp=fopen("pack.inp","r");
+	}else{
+		finp=fopen(argv[1],"r");
+	}
 
 //	--------------------------------------------------
 

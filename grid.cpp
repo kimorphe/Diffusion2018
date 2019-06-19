@@ -197,10 +197,13 @@ void Grid::setup_walkers(int n, int seed){
 
 	std::mt19937_64 engine(seed);
 	std::uniform_real_distribution<double>MT01(0.0,1.0);
+	std::uniform_int_distribution<int>MTN(0,Ng-1);
 	int i,iad;
 	double x0,y0;
 	for(i=0;i<nwk;i++){
-		iad=int(MT01(engine)*Ng)%Ng;
+//		iad=int(MT01(engine)*Ng)%Ng;
+//		iad=int(MT01(engine)*Ng-1);
+		iad=MTN(engine);
 		wks[i].nd0=&NDs[iad];
 		wks[i].ofx=0;
 		wks[i].ofy=0;
