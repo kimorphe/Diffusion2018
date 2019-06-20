@@ -50,7 +50,9 @@ class PoreCells:public Tree4{
 		void write_phs();
 		int count_grids();
 		int grid_type(int i,int j);
+		int grid_type_verb(int i,int j);
 		int grid_loc(int i,int j);
+		void grid_connect(int i0, int j0, int cnct[4]);
 		void fwrite_cells(char fn[128]);
 		void load_cell_data(char fn[128]);
 		void write_leaves();

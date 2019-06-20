@@ -386,9 +386,48 @@ void PoreCells::fwrite_cells(char fn[128]){
 	};
 	fclose(fp);
 };
+int PoreCells::grid_type_verb(int i, int j){
+
+	int k,l,m,ix,iy,nc=0;
+	int iad,phs,ityp;
+	int ngrid[3]={0,0,0}; // solid, fluid, gas
+
+	printf(" --> Looked around and foud cells: ");
+	for(k=-1; k<1; k++){	
+		ix=i+k;
+		if(ix<0) ix+=Nx;
+		if(ix>=Nx) ix-=Nx;
+	for(l=-1; l<1; l++){	
+		iy=j+l;
+		if(iy<0) iy+=Ny;
+		if(iy>=Ny) iy-=Ny;
+		m=ix*Ny+iy;
+		printf("%d ",m);
+		iad=find(m);
+
+		if(iad==-1){
+			ngrid[2]++;
+		}else{
+			phs=cells[iad].phs;
+			ngrid[phs]++;
+		}
+	}
+	}
+	printf("\n");
+
+	ityp=2;	// solid 
+	if(ngrid[1]>0){
+	     ityp=1;	// fluid
+	}else if(ngrid[0]>0){
+	     ityp=0;	// gas
+	}
+
+	return(ityp);	// 0:gas, 1:fluid, 2:solid
+};
+
 int PoreCells::grid_type(int i, int j){
 
-	int k,l,ix,iy,nc=0;
+	int k,l,m,ix,iy,nc=0;
 	int iad,phs,ityp;
 	int ngrid[3]={0,0,0}; // solid, fluid, gas
 
@@ -400,8 +439,8 @@ int PoreCells::grid_type(int i, int j){
 		iy=j+l;
 		if(iy<0) iy+=Ny;
 		if(iy>=Ny) iy-=Ny;
-		l=ix*Ny+iy;
-		iad=find(l);
+		m=ix*Ny+iy;
+		iad=find(m);
 
 		if(iad==-1){
 			ngrid[2]++;
@@ -421,6 +460,55 @@ int PoreCells::grid_type(int i, int j){
 
 	return(ityp);	// 0:gas, 1:fluid, 2:solid
 };
+
+void PoreCells::grid_connect(int i0, int j0, int cnct[4]){
+	int id,iad;
+
+	int i,j,k,l,m;
+	for(m=0;m<4;m++) cnct[m]=-1;
+
+	int iofs[4]={-1, 0, 0,-1};
+	int jofs[4]={-1,-1, 0, 0};
+//	printf(" ### Non-solid cell IDs: ");
+	for(m=0;m<4;m++){
+		i=i0+iofs[m];
+		j=j0+jofs[m];
+		if(j<0) j+=Ny;
+		if(i<0) i+=Nx;
+		if(j>=Ny) j-=Ny;
+		if(i>=Nx) i-=Nx;
+		id=i*Ny+j;
+		iad=PoreCells::find(id);
+		if(iad==-1) continue;
+		if(cells[iad].phs !=1) continue;
+//			printf("%d ",cells[iad].ID);
+		cnct[m]=1;
+		cnct[(m+1)%4]=1;
+	}
+//	printf("\n");
+/*
+	m=0;
+	for(l=-1; l<1; l++){
+		j=j0+l;
+		if(j<0) j+=Ny;
+		if(j>=Ny) j-=Ny;
+	for(k=-1; k<1; k++){
+		i=i0+k;
+		if(i<0) i+=Nx;
+		if(i>=Nx) i-=Nx;
+
+		id=i*Ny+j;
+		iad=PoreCells::find(id);
+		if(iad!=-1){
+			cnct[m]=1;
+			cnct[(m+1)%4]=1;
+		}
+		m++;
+	}
+	}
+*/
+}
+
 int PoreCells::count_grids(){
 	int i,j,ityp,jtyp;
 	int ng=0;

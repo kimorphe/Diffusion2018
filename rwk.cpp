@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
 	Grid gd(ng);
 	gd.set_grid_params(Pcll.Xa,Pcll.Xb,Pcll.Nx,Pcll.Ny);
 
-	int i,j,iad=0,ID=0;
+	int i,j,k,iad=0,ID=0;
 	for(i=0; i<Pcll.Nx; i++){
 	for(j=0; j<Pcll.Ny; j++){
 //		if(Pcll.grid_type(i,j)==1 || Pcll.grid_loc(i,j)==1){
@@ -72,7 +72,40 @@ int main(int argc, char *argv[]){
 	}
 	}
 	printf("ng=%d,iad_final=%d\n",ng,iad);
-	gd.connect();
+
+
+	int l,i0,j0;
+	int iofs[4]={-1, 0, 1, 0};
+	int jofs[4]={ 0,-1, 0, 1};
+	int cnct[4];
+	int nc=0;
+	for(l=0;l<ng;l++){
+		ID=gd.NDs[l].id;
+		i0=ID/gd.Ny;
+		j0=ID%gd.Ny;
+		Pcll.grid_connect(i0,j0,cnct);
+//		printf("(i0,j0)=(%d, %d)\n",i0,j0);
+		for(k=0;k<4;k++){
+//			printf("k=%d,cnct[k]=%d\n",k,cnct[k]);
+			gd.NDs[l].cnct[k]=cnct[k];
+			if(cnct[k]==-1) continue;
+			i=i0+iofs[k];
+			j=j0+jofs[k];
+			if(i<0) i+=gd.Nx;
+			if(j<0) j+=gd.Ny;
+			if(i>=gd.Nx) i-=gd.Nx;
+			if(j>=gd.Ny) j-=gd.Ny;
+			iad=gd.find(i*gd.Ny+j);
+//			printf("ID%d, (i,j)=(%d,%d)\n",i*gd.Ny+j,i,j);
+//			printf("ityp=%d\n",Pcll.grid_type_verb(i,j));
+			if(iad==-1) puts("ERROR!!");
+			gd.NDs[l].cnds[k]=gd.NDs+iad;
+			nc++;
+		}
+	};
+	printf("nc(mean)=%lf\n",nc/(float)ng);
+
+//	gd.connect();
 
 	gd.setup_walkers(nwk,-5);	// setup random walkers 
 	gd.init_rand(-2);
@@ -80,9 +113,10 @@ int main(int argc, char *argv[]){
 	FILE *fu=fopen(fu2b,"w");
 	for(j=0;j<Nt;j++){
 		gd.rwk();
-		if(j%inc==0) gd.write_wks(fout);
+	//	if(j%inc==0) gd.write_wks(fout);
 		fprintf(fu,"%lf\n", gd.mean_u2());
 	};
+	gd.write_wks(fout);
 	fclose(fu);
 
 /*

@@ -219,12 +219,17 @@ void Grid::init_rand(int seed){
 	irnd3=std::uniform_int_distribution<int>(0,3);
 };
 void Grid::rwk(){
+
+	static std::mt19937_64 eng(-2);
+	std::uniform_int_distribution<int>irnd(0,3);
+
 	Walker wk;
 	double xcod,ycod;
 	int iwk,next;
 	for(iwk=0;iwk<nwk;iwk++){
 		wk=wks[iwk];
-		next=irnd3(engine);	
+		//next=irnd3(engine);	
+		next=irnd3(eng);	
 		if(wk.nd0->cnct[next]!=-1){
 			wk.nd0=wk.nd0->cnds[next];
 			grid_cod(wk.nd0->iad,&xcod,&ycod);
@@ -242,9 +247,14 @@ void Grid::rwk(){
 void Grid::write_wks(char fname[128]){
 	static FILE *fp=fopen(fname,"w");
 	Walker wk;
+	double xx,yy,ux,uy;
 	for(int iwk=0; iwk<nwk; iwk++){
 		wk=wks[iwk];
-		fprintf(fp,"%lf %lf\n",wk.xn+wk.ofx*Wd[0], wk.yn+wk.ofy*Wd[1]);
+		xx=wk.xn+wk.ofx*Wd[0];
+		yy=wk.yn+wk.ofy*Wd[1];
+		ux=xx-wk.x0;
+		uy=yy-wk.y0;
+		fprintf(fp,"%lf %lf %lf %lf\n",xx,yy,ux,uy);
 	}
 };
 double Grid::mean_u2(){
