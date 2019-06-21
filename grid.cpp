@@ -244,10 +244,11 @@ void Grid::rwk(){
 		}
 	};
 };
-void Grid::write_wks(char fname[128]){
-	static FILE *fp=fopen(fname,"w");
+void Grid::write_wks(char fname[128],int istp){
+	FILE *fp=fopen(fname,"w");
 	Walker wk;
 	double xx,yy,ux,uy;
+	fprintf(fp,"# step= %d\n",istp);
 	for(int iwk=0; iwk<nwk; iwk++){
 		wk=wks[iwk];
 		xx=wk.xn+wk.ofx*Wd[0];
@@ -256,6 +257,20 @@ void Grid::write_wks(char fname[128]){
 		uy=yy-wk.y0;
 		fprintf(fp,"%lf %lf %lf %lf\n",xx,yy,ux,uy);
 	}
+};
+void Grid::mean_u(double *Ux, double *Uy){
+	double ux=0.0,uy=0.0;
+	double dux,duy;
+	Walker wk;
+	for(int iwk=0; iwk<nwk; iwk++){
+		wk=wks[iwk];
+		dux=(wk.xn+wk.ofx*Wd[0]-wk.x0);
+		duy=(wk.yn+wk.ofy*Wd[1]-wk.y0);
+		ux+=dux;
+		uy+=duy;
+	};
+	*Ux=ux/nwk;
+	*Uy=uy/nwk;
 };
 double Grid::mean_u2(){
 	double u2=0.0,dux,duy;

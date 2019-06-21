@@ -43,8 +43,9 @@ class Grid{
 		void init_rand(int seed);
 		void rwk();
 		double tolx,toly;
-		void write_wks(char fname[128]);
+		void write_wks(char fname[128],int istp);
 		double mean_u2();
+		void mean_u(double *Ux, double *Uy);
 	private:
 		void mem_alloc();
 };

@@ -21,7 +21,7 @@ int main(int argc, char *argv[]){
 	char fu2b[128]; // output (square mean displacement)
 	int nwk;	// number of walkers
 	int Nt;	// time steps
-	int inc; 	// output time step increment
+	int nout,inc; 	// output times and step increment
 	char cbff[128];
 	FILE *fp;
 
@@ -46,7 +46,10 @@ int main(int argc, char *argv[]){
 	fgets(cbff,128,fp);
 	fscanf(fp,"%d\n",&Nt);
 	fgets(cbff,128,fp);
-	fscanf(fp,"%d\n",&inc);
+	fscanf(fp,"%d\n",&nout);
+	inc=Nt/nout;
+	if(inc==0) inc=1;
+	printf("nout=%d\n",nout);
 	printf("inc=%d\n",inc);
 	fclose(fp);
 //	----------------------------------
@@ -111,12 +114,22 @@ int main(int argc, char *argv[]){
 	gd.init_rand(-2);
 
 	FILE *fu=fopen(fu2b,"w");
+	int iout=0;
+	char ftmp[128];
+	double uxb,uyb,u2b;
 	for(j=0;j<Nt;j++){
+		if(j%inc==0){
+			sprintf(ftmp,"rwk%d.out",iout);
+			gd.write_wks(ftmp,j);
+			iout++;
+		}
 		gd.rwk();
-	//	if(j%inc==0) gd.write_wks(fout);
-		fprintf(fu,"%lf\n", gd.mean_u2());
+		u2b=gd.mean_u2();
+		gd.mean_u(&uxb, &uyb);
+		fprintf(fu,"%lf %lf %lf\n", u2b,uxb,uyb);
 	};
-	gd.write_wks(fout);
+	gd.write_wks(fout,Nt-1);
+
 	fclose(fu);
 
 /*
