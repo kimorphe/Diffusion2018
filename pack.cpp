@@ -23,12 +23,15 @@ class Grain{
 		double Drng[2];	// diameter
 		double Arng[2];	// aspect ratio
 		double Trng[2];	// angle 
+		double D_mean, D_std;
 		double Wd[2];
 		std::mt19937_64 mt;	// random number generator
 		std::uniform_real_distribution<> Urnd;
 		std::normal_distribution<> Grnd;
+		std::gamma_distribution<> Gmm_rnd;
 		void init_rand(int seed);
-		void gen();
+		void gen();	// uniform distribution
+		void gen2();	// Gamma Distribution
 		double ra,rb,alph,th;
 		double x,y;
 		void print();
@@ -39,9 +42,26 @@ void Grain::init_rand(int seed){
 	mt=std::mt19937_64(seed);
 	Urnd=std::uniform_real_distribution<double>(0.0,1.0); // Uniform distribution(min,max)
 	Grnd=std::normal_distribution<double>(0.0,1.0); // Normal distribution(mean,stdev)	
+	double alph,beta;
+	alph=D_mean/D_std;
+	alph=alph*alph;
+	beta=D_std*D_std/D_mean;
+	Gmm_rnd=std::gamma_distribution<double>(alph,beta); // Normal distribution(mean,stdev)	
 };
 void Grain::gen(){
 	ra=0.5*(Urnd(mt)*(Drng[1]-Drng[0])+Drng[0]);
+	alph=Urnd(mt)*(Arng[1]-Arng[0])+Arng[0];
+	rb=ra*alph;
+	th=Urnd(mt)*(Trng[1]-Trng[0])+Trng[0];
+	x=Urnd(mt)*Wd[0];
+	y=Urnd(mt)*Wd[1];
+};
+void Grain::gen2(){
+	ra=0.5*(Urnd(mt)*(Drng[1]-Drng[0])+Drng[0]);
+	ra=-1.0;
+	while( (ra<Drng[0])||(ra >Drng[1]) ){
+		ra=Gmm_rnd(mt);
+	};
 	alph=Urnd(mt)*(Arng[1]-Arng[0])+Arng[0];
 	rb=ra*alph;
 	th=Urnd(mt)*(Trng[1]-Trng[0])+Trng[0];
@@ -79,6 +99,7 @@ int main(int argc, char *argv[]){
 	}else{
 		finp=fopen(argv[1],"r");
 	}
+	int dist;	// 0:uniform, 1:Gamma distribution
 
 //	--------------------------------------------------
 
@@ -95,7 +116,12 @@ int main(int argc, char *argv[]){
 	fscanf(finp,"%lf\n",&poro);
 
 	fgets(cbff,128,finp);
+	fscanf(finp,"%d\n",&dist);
+	fgets(cbff,128,finp);
 	fscanf(finp,"%lf,%lf\n",gr.Drng, gr.Drng+1);
+	fgets(cbff,128,finp);
+	fscanf(finp,"%lf,%lf\n",&gr.D_mean, &gr.D_std);
+
 	fgets(cbff,128,finp);
 	fscanf(finp,"%lf,%lf\n",gr.Arng, gr.Arng+1);
 	fgets(cbff,128,finp);
@@ -116,9 +142,17 @@ int main(int argc, char *argv[]){
 	double S0=0.0,pr=1.0;
 	int np=0;
 	while(pr>poro){
-		gr.gen();
+		if(dist==0){
+			gr.gen();
+		}else if(dist==1){
+			gr.gen2();
+		}else{
+			printf("Invalid distribution type\n");
+			exit(-1);
+		};
 		S0+=gr.area();
-		pr=1.0-S0/Wd[0]*Wd[1];
+		pr=1.0-S0/(Wd[0]*Wd[1]);
+		printf("pr=%lf, ra=%lf\n",pr,gr.ra);
 		np++;
 	};
 	printf("np=%d\n",np);
@@ -128,7 +162,14 @@ int main(int argc, char *argv[]){
 	Solid sld(np);
 	sld.set_domain(Xa,Wd);
 	for(int i=0;i<np;i++){
-		gr.gen();
+		if(dist==0){
+			gr.gen();
+		}else if(dist==1){
+			gr.gen2();
+		}else{
+			printf("Invalid distribution type\n");
+			exit(-1);
+		};
 		sld.els[i].set_xc(gr.x,gr.y);
 		sld.els[i].phi=gr.th;
 		sld.els[i].set_radi(gr.ra,gr.rb);

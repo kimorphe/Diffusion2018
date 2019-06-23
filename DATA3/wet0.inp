@@ -1,0 +1,23 @@
+# solid phase data file (input)
+../solid.dat
+# pore coverning cell data file (output)
+pore.dat
+# seed for random number generator
+SEED 
+# Resolution (quad tree height)
+ 8
+# Xa[2]: REV position (lower left corner)
+0.0,0.0
+# Wd[2]: REV size 
+1.0,1.0
+# thE: Solid-fluid contact angle [deg]
+ 30.0
+# Sr: degree of saturation
+DEG_SAT
+# Temperature control
+ 10.e0, 1.0e-03
+# Monte Carlo step
+ 600
+
+# Temperature control
+ 10.e0, 0.5e-02

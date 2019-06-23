@@ -35,6 +35,7 @@ int main(int argc, char *argv[]){
 	double Sr;	// degree of saturation
 	double T1,T2;
 	int nstep;
+	int seed;
 
 //	---------------------------------------
 	FILE *fp=fopen("wet.inp","r");
@@ -45,6 +46,8 @@ int main(int argc, char *argv[]){
 	fscanf(fp,"%s\n",fsld);
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fout);
+	fgets(cbff,128,fp);
+	fscanf(fp,"%d\n",&seed);
 
 	puts(fsld);
 	puts(fout);
@@ -69,13 +72,15 @@ int main(int argc, char *argv[]){
 	sld.load(fsld);	// import solid phase data
 	sld.bbox.setup(Xa,Wd); // set bounding box
 
+	double Etot0,Etot;
 	PoreCells Pcll;
 	Pcll.load_gmm(thE);
 	Pcll.qp0.refine[0]=true;	// set parameter to refine pore space plus boundary
 	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
 	Pcll.connect(); // establish connection among pore coverning cells
 	Pcll.init(Sr);	// initialize phase distribution
-	printf("total energy=%lf\n",Pcll.total_energy());
+	Etot0=Pcll.total_energy();
+	printf("Total energy=%lf\n",Etot0);
 
 	Temp_Hist TH(T1,T2,nstep);
 
@@ -89,7 +94,7 @@ int main(int argc, char *argv[]){
 		dEb=0.0;
 	while(TH.cont_iteration){
 		TH.inc_Temp_exp();
-		dE=Pcll.MC_stepping(TH,&nswap);
+		dE=Pcll.MC_stepping(TH,&nswap,seed);
 //		if(i%10==0) printf("%d/%d %10.05e %10.05e\n",i,nstep,dE,Pcll.Etot);
 		dEb+=dE;
 		fprintf(fo,"%12.06e %12.06e %12.06e\n",TH.Temp,dE,Pcll.Etot);
@@ -103,6 +108,8 @@ int main(int argc, char *argv[]){
 	};
 
 
+	Etot=Pcll.total_energy();
+	printf("Total energy=%lf\n",Etot);
 	Pcll.write_phs();
 	Pcll.fwrite_cells(fout);
 	Pcll.write_leaves();

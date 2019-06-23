@@ -290,11 +290,12 @@ void PoreCells::reject_swap(int id, int jd){
 
 };
 
-double PoreCells::MC_stepping(Temp_Hist TH, int *nsp){
+double PoreCells::MC_stepping(Temp_Hist TH, int *nsp, int seed){
 	int i,j,itmp;
 	int id,jd;
 	double dE,prb;
-	static std::mt19937_64 engine(-2);
+	//static std::mt19937_64 engine(-2);
+	static std::mt19937_64 engine(seed);
 	std::uniform_int_distribution<int>MTv(0,n_void-1);
 	std::uniform_int_distribution<int>MTw(0,n_water-1);
 	std::uniform_real_distribution<double>Urnd(0.0,1.0);
@@ -370,6 +371,8 @@ void PoreCells::fwrite_cells(char fn[128]){
 	FILE *fp=fopen(fn,"w");
 	fprintf(fp,"# thE (contact angle [deg])\n");
 	fprintf(fp,"%lf\n",mtrl.thE/PI*180.0);
+	fprintf(fp,"# Etot (total energy)\n");
+	fprintf(fp,"%lf\n",Etot);
 	fprintf(fp,"# Sr (degree of saturation)\n");
 	fprintf(fp,"%lf\n",Sr);
 
@@ -566,6 +569,8 @@ void PoreCells::load_cell_data(char fn[128]){
 	fgets(cbff,128,fp);
 	fscanf(fp,"%lf\n",&th);
 	load_gmm(th);
+	fgets(cbff,128,fp);
+	fscanf(fp,"%lf\n",&Etot);
 
 	fgets(cbff,128,fp);
 	fscanf(fp,"%lf\n",&Sr);

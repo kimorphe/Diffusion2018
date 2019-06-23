@@ -1,0 +1,12 @@
+# Cell data file (pore coverning cell) 
+pore.dat
+# Output file (walker position)
+rwk.out
+# Output file (square mean displacement )
+u2b.out
+# nwk: number of random walkers
+ 10000
+# Nt: time steps
+ 100000
+# nout
+ 5 

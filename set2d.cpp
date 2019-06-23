@@ -1523,8 +1523,8 @@ double Solid::MC(Temp_Hist TH){
 	double dE,dE_sum=0.0;
 	double prb,alph,beta;
 	double tau=TH.tau();
-	//double a1=1.0, a2=0.1;
-	double a1=1.0, a2=0.2;
+	double a1=1.0, a2=0.1;
+	//double a1=1.0, a2=0.2;
 	alph=(1.-tau)*a1+tau*a2;	// a1 --> a2
 	beta=(1.-tau)*1.0+tau*0.2;	
 	//beta=1.0;
