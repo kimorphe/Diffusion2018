@@ -117,6 +117,7 @@ class Solid{
 		Solid();
 		Solid(int n);
 		Solid(int n, double Wd[2]);
+		double A0;
 		void draw(char fn[128],int ndat);
 		Bbox bbox;
 		double perturb(int p, double ux, double uy, double dphi);
@@ -130,6 +131,8 @@ class Solid{
 		std::uniform_real_distribution<> Urnd;
 		std::normal_distribution<> Grnd;
 		void set_domain(double Xa[2], double Wd[2]);
+		double s_over;	// overlapped area ratio
+		double poro;
 	private:
 	protected:
 };

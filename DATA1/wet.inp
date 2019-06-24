@@ -2,8 +2,6 @@
 ../solid.dat
 # pore coverning cell data file (output)
 pore.dat
-# seed for random number generator
-SEED 
 # Resolution (quad tree height)
  8
 # Xa[2]: REV position (lower left corner)
@@ -13,7 +11,7 @@ SEED
 # thE: Solid-fluid contact angle [deg]
  30.0
 # Sr: degree of saturation
-DEG_SAT
+ 0.60
 # Temperature control
  10.e0, 1.0e-03
 # Monte Carlo step

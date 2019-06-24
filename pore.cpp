@@ -242,8 +242,9 @@ double PoreCells::cell_energy(int iad){
 		jphs=cell_j->phs;
 		Erg+=mtrl.gmm[iphs][jphs];
 	}
-	Erg+=(8-nc)*mtrl.gmm[iphs][2];
-	return(Erg*0.5/nb);
+	Erg*=0.5;
+	Erg+=(nb-nc)*mtrl.gmm[iphs][2];
+	return(Erg/nb);
 };
 double PoreCells::total_energy(){
 	Etot=0.0;
@@ -255,38 +256,52 @@ double PoreCells::total_energy(){
 	}
 	return(Etot);
 };
+double PoreCells::cell_energy_diff(int iad){
+
+	Cell *cell_i,*cell_j;
+
+	int iphs,jphs;
+	int iphs_bff,jphs_bff;
+	int k,nc;
+	double Erg;
+	int nb=8;	// number of neighboring cells
+
+	cell_i=cells+iad;
+	nc=cell_i->nc;
+	iphs=cell_i->phs;
+	iphs_bff=cell_i->phs_bff;
+	Erg=0.0;
+	for(k=0;k<nc;k++){
+		cell_j=cell_i->cncl[k];
+		jphs=cell_j->phs;
+		jphs_bff=cell_j->phs_bff;
+		Erg+=mtrl.gmm[iphs][jphs];
+		Erg-=mtrl.gmm[iphs_bff][jphs_bff];
+	}
+	Erg+=(nb-nc)*mtrl.gmm[iphs][2];
+	Erg-=(nb-nc)*mtrl.gmm[iphs_bff][2];
+	return(Erg/nb);
+};
 double PoreCells::swap(int id, int jd){
 
 	cells[id].phs_bff=cells[id].phs;
-	cells[id].erg_bff=cells[id].erg;
-
 	cells[jd].phs_bff=cells[jd].phs;
-	cells[jd].erg_bff=cells[jd].erg;
 
 	int itmp;
 	itmp=cells[id].phs;
 	cells[id].phs=cells[jd].phs;
 	cells[jd].phs=itmp;
 
-	double Ei,Ej,dEi,dEj;
-	Ei=cell_energy(id);
-	Ej=cell_energy(jd);
-
-	dEi=Ei-cells[id].erg;
-	dEj=Ej-cells[jd].erg;
-
-	cells[id].erg=Ei;
-	cells[jd].erg=Ej;
+	double dEi,dEj;
+	dEi=cell_energy_diff(id);
+	dEj=cell_energy_diff(jd);
 
 	return(dEi+dEj);
-	
 };
 void PoreCells::reject_swap(int id, int jd){
 
 	cells[id].phs=cells[id].phs_bff;
-	cells[id].erg=cells[id].erg_bff;
 	cells[jd].phs=cells[jd].phs_bff;
-	cells[jd].erg=cells[jd].erg_bff;
 
 };
 
@@ -314,6 +329,8 @@ double PoreCells::MC_stepping(Temp_Hist TH, int *nsp, int seed){
 				indx_w[i]=indx_v[j];
 				indx_v[j]=itmp;
 				Etot+=dE;
+				cells[id].phs_bff=cells[id].phs;
+				cells[jd].phs_bff=cells[jd].phs;
 				nswap++;
 			}else{
 				reject_swap(id,jd);
@@ -331,6 +348,8 @@ double PoreCells::MC_stepping(Temp_Hist TH, int *nsp, int seed){
 				indx_v[i]=indx_w[j];
 				indx_w[j]=itmp;
 				Etot+=dE;
+				cells[id].phs_bff=cells[id].phs;
+				cells[jd].phs_bff=cells[jd].phs;
 				nswap++;
 			}else{
 				reject_swap(id,jd);
@@ -472,7 +491,6 @@ void PoreCells::grid_connect(int i0, int j0, int cnct[4]){
 
 	int iofs[4]={-1, 0, 0,-1};
 	int jofs[4]={-1,-1, 0, 0};
-//	printf(" ### Non-solid cell IDs: ");
 	for(m=0;m<4;m++){
 		i=i0+iofs[m];
 		j=j0+jofs[m];
@@ -484,32 +502,9 @@ void PoreCells::grid_connect(int i0, int j0, int cnct[4]){
 		iad=PoreCells::find(id);
 		if(iad==-1) continue;
 		if(cells[iad].phs !=1) continue;
-//			printf("%d ",cells[iad].ID);
 		cnct[m]=1;
 		cnct[(m+1)%4]=1;
 	}
-//	printf("\n");
-/*
-	m=0;
-	for(l=-1; l<1; l++){
-		j=j0+l;
-		if(j<0) j+=Ny;
-		if(j>=Ny) j-=Ny;
-	for(k=-1; k<1; k++){
-		i=i0+k;
-		if(i<0) i+=Nx;
-		if(i>=Nx) i-=Nx;
-
-		id=i*Ny+j;
-		iad=PoreCells::find(id);
-		if(iad!=-1){
-			cnct[m]=1;
-			cnct[(m+1)%4]=1;
-		}
-		m++;
-	}
-	}
-*/
 }
 
 int PoreCells::count_grids(){

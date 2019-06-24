@@ -284,3 +284,35 @@ double Grid::mean_u2(){
 	return(u2/nwk);
 };
 //----------------------------------------------------------
+void Grid::dbg_connectivity(){
+
+	int I,J;	//Node No.
+	int eI,eJ[4]={2,3,0,1};
+	Node NI,NJ,NK;
+	int ierr;
+	for(I=0;I<Ng;I++){
+		printf("I=%d\n",I);
+		NI=NDs[I];
+	for(eI=0;eI<4;eI++){
+		if(NI.cnct[eI]==-1) continue;
+		NJ=*NI.cnds[eI];
+		if(NJ.cnct[eJ[eI]]==-1){
+			printf("Unilateral connection detected !!\n");
+			exit(-1);
+		}
+		NK=*NJ.cnds[eJ[eI]];	// reflection NI->NJ->NK should be =NI
+		ierr=0;
+		ierr=fabs(NI.iad-NK.iad)+fabs(NI.id-NK.id);
+		if(ierr>0){
+			printf("NI.iad=%d, id=%d\n",NI.iad,NI.id);
+			printf("NK.iad=%d, id=%d\n",NK.iad,NK.id);
+			printf("Unilateral connection detected !!\n");
+			exit(-1);
+		}
+
+	}		
+	}
+	puts("Erorr not detected.");
+	int tmp;
+	scanf("%d",&tmp);
+};

@@ -3,13 +3,14 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-fname="Sr2/rwk.out"
+fname="Sr6/rwk.out"
 fp=open(fname,"r")
 
 x=[];
 y=[];
 ux=[];
 uy=[];
+fp.readline()
 for var in fp:
     dat=var.strip().split(" ")
     x.append(float(dat[0]));
@@ -22,8 +23,8 @@ fig=plt.figure()
 ax1=fig.add_subplot(211)
 ax2=fig.add_subplot(212)
 #ax.plot(x,y,".")
-ax1.hist(ux,bins=60);
-ax2.hist(uy,bins=60)
+ax1.hist(ux,bins=50);
+ax2.hist(uy,bins=50)
 ax1.grid(True)
 ax2.grid(True)
 

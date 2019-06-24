@@ -1,5 +1,4 @@
 #define DB 1
-//#define DB 0
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,7 +58,7 @@ void Grain::gen(){
 void Grain::gen2(){
 	ra=0.5*(Urnd(mt)*(Drng[1]-Drng[0])+Drng[0]);
 	ra=-1.0;
-	while( (ra<Drng[0])||(ra >Drng[1]) ){
+	while( (ra<Drng[0]*0.5)||(ra >Drng[1]*0.5) ){
 		ra=Gmm_rnd(mt);
 	};
 	alph=Urnd(mt)*(Arng[1]-Arng[0])+Arng[0];
@@ -84,6 +83,7 @@ int main(int argc, char *argv[]){
 	FILE *finp;
 	
 	FILE *fl=fopen("pack.erg","w");
+	FILE *fpr=fopen("porosity.dat","w");
 	char fn[128]="geom.dat";
 	char cbff[128],fout[128];
 	double Xa[2],Wd[2];
@@ -179,18 +179,32 @@ int main(int argc, char *argv[]){
 
 
 	sld.area(Lev);
+
+	int j,jmax=25,isum;
 	double dE_tot=0.0,dE;
-	while(TH.cont_iteration){
-		TH.inc_Temp_exp();
-		dE=sld.MC(TH);
-		dE_tot+=dE;
-		printf("tau=%lf, dE=%le dE_sum=%le\n",TH.tau(),dE,dE_tot);
-		fprintf(fl,"%ld %le %le %le %le\n",TH.istep,TH.tau(),TH.Temp,dE,dE_tot);
-		fflush(stdout);
-	};
-	printf("dE_tot=%lf\n",dE_tot);
+	double alph=0.05;
+	int jnc=int(TH.nstep/4);
+
+	fprintf(fpr,"# porosity(n)  overlap(dS/S)\n");
+	for(j=0;j<jmax;j++){
+		printf("Iteration Step =%d\n",j);
+		while(TH.cont_iteration){
+			TH.inc_Temp_exp();
+			dE=sld.MC(TH);
+			dE_tot+=dE;
+			if(TH.istep%jnc==0) printf(" tau=%lf, dE=%le, dE_sum=%le\n",TH.tau(),dE,dE_tot);
+			fprintf(fl,"%ld %le %le %le %le\n",TH.istep,TH.tau(),TH.Temp,dE,dE_tot);
+			fflush(stdout);
+			isum++;
+		};
+		fprintf(fpr,"%lf %lf\n",sld.poro,sld.s_over);
+		sld.area(Lev);
+		if(sld.s_over<0.001) break;
+		TH.renew(alph);
+		printf("\n");
+	}
+
 	sld.draw(fn,50);
-	sld.area(Lev);
 	sld.write(fout);
 
 	Tree4 tr4;

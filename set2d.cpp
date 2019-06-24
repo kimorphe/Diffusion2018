@@ -934,7 +934,7 @@ void Tree4::setup(Ellip *els, int nelp, bool set_opr, int LevMax, Bbox bx){
 	count=0;
 	gather_leaves(&qp0,&count,leaves);
 	ready=true;
-	printf("n_leaves=%d\n",n_leaves);
+	//printf("n_leaves=%d\n",n_leaves);
 
 }
 void Tree4::setup(Solid sld,int LevMax){
@@ -1442,6 +1442,7 @@ void Solid::set_domain(double Xa[2], double Wd[2]){
 	double Xb[2];
 	Xb[0]=Xa[0]+Wd[0];
 	Xb[1]=Xa[1]+Wd[1];
+	A0=Wd[0]*Wd[1];
 	bbox.setup(Xa,Xb);
 };
 Solid::Solid(int n, double Wd[2]){
@@ -1452,6 +1453,7 @@ Solid::Solid(int n, double Wd[2]){
 	Solid::init_rand(-1);
 
 	double Xa[2],Xb[2];
+	A0=Wd[0]*Wd[1];
 	Xa[0]=0.0; Xa[1]=0.0;	
 	Xb[0]=Xa[0]+Wd[0];
 	Xb[1]=Xa[1]+Wd[1];
@@ -1472,10 +1474,10 @@ Solid::Solid(int n, double Wd[2]){
 		els[i].set_bbox();
 		S0+=els[i].area();
 	};
-	printf("Number of particles=%d\n",nelp);
+	printf("** Number of particles=%d\n",nelp);
 	double psi=S0/bbox.area();
-	printf("Max. packing density=%lf%%\n",psi*100.);
-	printf("(min. porosity=%lf\n",1-psi);
+	printf("** Max. packing density=%lf%%\n",psi*100.);
+	printf("** (min. porosity=%lf\n",1-psi);
 };
 void Solid::init_rand(int seed){
 	mt=std::mt19937_64(seed);
@@ -1539,7 +1541,7 @@ double Solid::MC(Temp_Hist TH){
 			dphi=2.*PI*(Urnd(mt)-0.5)*beta*0.5;
 		};
 	       	//dE=perturb(ip,ux,uy,dphi);
-	       	dE=perturb_periodic(ip,ux,uy,dphi);
+	       	dE=perturb_periodic(ip,ux,uy,dphi)/A0;
 		prb=exp(-dE/TH.Temp);
 		if(prb>1.0) prb=1.0;
 		if(Urnd(mt) <=prb){	//accept
@@ -1694,10 +1696,13 @@ double Solid::area(int lev_max){
 		si+=tr4.area();
 		tr4.clean();
 	};
-	printf("Overlap =%lf\n",si-S);
+	s_over=si/S-1.0;
+
 	double phi=S/bbox.area();
-	printf("Packng Density =%lf%%\n",S*100.);
-	printf("Porosity sity =%lf%%\n",1-S);
+	printf("** Overlap =%5.2lf[%%], ",s_over*100.);
+	printf("Packng Density =%5.2lf[%%], ",S*100.);
+	printf("Porosity =%5.2lf[%%]\n",(1.-S)*100);
+	poro=1.-S;
 	return(S);
 };
 

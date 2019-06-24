@@ -46,6 +46,7 @@ class Grid{
 		void write_wks(char fname[128],int istp);
 		double mean_u2();
 		void mean_u(double *Ux, double *Uy);
+		void dbg_connectivity();	
 	private:
 		void mem_alloc();
 };

@@ -40,6 +40,7 @@ class PoreCells:public Tree4{
 		int *indx_w;	// index set of fluid phase
 		int *indx_v;	// index set of gas phase
 		double cell_energy(int iad); // evaluate interfacial energy/cell
+		double cell_energy_diff(int iad); // evaluate interfacial energy/cell
 		double total_energy(); // evaluate total interfacial energy
 		Material mtrl;	// material constants (interfaceial energy)
 		void load_gmm(double th); // load gmm data (th = fluid/solid contact angle)

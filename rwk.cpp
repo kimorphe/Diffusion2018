@@ -33,13 +33,10 @@ int main(int argc, char *argv[]){
 	};
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fdat);
-	puts(fdat);
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fout);
-	puts(fout);
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fu2b);
-	puts(fu2b);
 
 	fgets(cbff,128,fp);
 	fscanf(fp,"%d\n",&nwk);
@@ -87,9 +84,7 @@ int main(int argc, char *argv[]){
 		i0=ID/gd.Ny;
 		j0=ID%gd.Ny;
 		Pcll.grid_connect(i0,j0,cnct);
-//		printf("(i0,j0)=(%d, %d)\n",i0,j0);
 		for(k=0;k<4;k++){
-//			printf("k=%d,cnct[k]=%d\n",k,cnct[k]);
 			gd.NDs[l].cnct[k]=cnct[k];
 			if(cnct[k]==-1) continue;
 			i=i0+iofs[k];
@@ -99,16 +94,13 @@ int main(int argc, char *argv[]){
 			if(i>=gd.Nx) i-=gd.Nx;
 			if(j>=gd.Ny) j-=gd.Ny;
 			iad=gd.find(i*gd.Ny+j);
-//			printf("ID%d, (i,j)=(%d,%d)\n",i*gd.Ny+j,i,j);
-//			printf("ityp=%d\n",Pcll.grid_type_verb(i,j));
 			if(iad==-1) puts("ERROR!!");
 			gd.NDs[l].cnds[k]=gd.NDs+iad;
 			nc++;
 		}
 	};
 	printf("nc(mean)=%lf\n",nc/(float)ng);
-
-//	gd.connect();
+	//gd.dbg_connectivity();
 
 	gd.setup_walkers(nwk,-5);	// setup random walkers 
 	gd.init_rand(-2);

@@ -11,11 +11,12 @@ git add temp_hist.inp
 git add kcell.py
 git add DATA2/uplot.py
 # input data 
+git add DATA1/*.inp
 git add DATA2/*.inp
 git add DATA3/*.inp
+git add DATA4/*.inp
 #shell script
 git add DATA2/*.sh
-git add DATA3/*.sh
 
 git commit 
 

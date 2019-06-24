@@ -9,15 +9,15 @@ solid.dat
 # poro (design porosity )
  0.22
 # distribution (0:uniform, 1:Gamma)
- 0
+ 1
 # solid grain size (min & max diameters)
- 0.2,0.2 
+ 0.01,0.3
 # solid grain size (mean, stdev) used when Gamma distribution
- 0.05,0.05 
+ 0.05,0.1
 # aspect ratio
- 1.0,1.0
+ 0.4,1.0
 # angle [deg]
- 0.0,0.0
+ 0.0,90.0
 # Ts, Te (initial and final temperatures)
  2.e0,1.e-06
 # Nstep (number of Monte Carlo Step)
