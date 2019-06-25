@@ -8,7 +8,7 @@ git add *.cpp
 git add *.h
 git add temp_hist.inp
 # Visualization
-git add kcell.py
+git add *.py
 git add DATA2/uplot.py
 # input data 
 git add DATA1/*.inp
