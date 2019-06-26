@@ -179,10 +179,13 @@ int main(int argc, char *argv[]){
 
 
 	sld.area(Lev);
+	char ftmp[128]="solid_initial.dat";
+	sld.write(ftmp);
 
-	int j,jmax=25,isum;
+	int j,jmax=100,isum;
 	double dE_tot=0.0,dE;
-	double alph=0.05;
+	//double alph=0.05;
+	double alph=0.1;
 	int jnc=int(TH.nstep/4);
 
 	fprintf(fpr,"# porosity(n)  overlap(dS/S)\n");

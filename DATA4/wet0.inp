@@ -11,7 +11,7 @@ SEED
 # Wd[2]: REV size 
 1.0,1.0
 # thE: Solid-fluid contact angle [deg]
- 30.0
+ 45.0
 # Sr: degree of saturation
 DEG_SAT
 # Temperature control

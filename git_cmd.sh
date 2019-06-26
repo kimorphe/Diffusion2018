@@ -9,6 +9,8 @@ git add *.h
 git add temp_hist.inp
 # Visualization
 git add *.py
+git add DATA0/uplot.py
+git add DATA1/uplot.py
 git add DATA2/uplot.py
 # input data 
 git add DATA1/*.inp

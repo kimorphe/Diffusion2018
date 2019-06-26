@@ -58,6 +58,7 @@ int main(int argc, char *argv[]){
 	sld.load(fsld);	// import solid phase data
 	sld.bbox.setup(Xa,Wd); // set bounding box
 
+	char ftmp[128]="pore_initial.dat";
 	double Etot0,Etot;
 	PoreCells Pcll;
 	Pcll.load_gmm(thE);
@@ -65,6 +66,7 @@ int main(int argc, char *argv[]){
 	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
 	Pcll.connect(); // establish connection among pore coverning cells
 	Pcll.init(Sr);	// initialize phase distribution
+	Pcll.fwrite_cells(ftmp);
 
 	Temp_Hist TH(T1,T2,nstep);
 
