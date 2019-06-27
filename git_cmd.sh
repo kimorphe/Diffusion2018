@@ -10,15 +10,15 @@ git add temp_hist.inp
 # Visualization
 git add *.py
 git add DATA0/uplot.py
-git add DATA1/uplot.py
-git add DATA2/uplot.py
+git add DATA3/*.py
+git add DATA4/*.py
 # input data 
 git add DATA1/*.inp
 git add DATA2/*.inp
 git add DATA3/*.inp
 git add DATA4/*.inp
 #shell script
-git add DATA2/*.sh
+git add DATA3/*.sh
 
 git commit 
 

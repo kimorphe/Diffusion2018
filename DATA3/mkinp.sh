@@ -1,7 +1,7 @@
 declare -a Sr
 declare -i seed
 
-seed=-3
+seed=-1
 Sr=( 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0)
 declare -i i
 #echo Sr=${Sr[*]}

@@ -8,8 +8,6 @@ do
 	i=$(($i+1))
 	cd Sr$i
 	echo $PWD 
-	#echo ../../wet 
-	#echo ../../rwk ../rwk.inp
 	../../wet 
 	../../rwk ../rwk.inp
 	cd ../
