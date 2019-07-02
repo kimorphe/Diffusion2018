@@ -27,9 +27,15 @@ int main(int argc, char *argv[]){
 	int seed;
 
 //	---------------------------------------
-	FILE *fp=fopen("wet.inp","r");
+	FILE *fp;
+	if(argc >1){
+		fp=fopen(argv[1],"r");
+	}else{
+		fp=fopen("wet.inp","r");
+	}
 	FILE *fo=fopen("wet.erg","w");
 	char cbff[128];
+	double tmp;
 
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fsld);

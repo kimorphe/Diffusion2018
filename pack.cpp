@@ -91,18 +91,22 @@ int main(int argc, char *argv[]){
 	int Lev;	// Quad-tree height
 	double T1,T2;	// temperatures (start,end)
 	int nstep;	// Number of MC steps
-	int seed=-1;
+	int seed;
 	double PI=4.0*atan(1.0);
 	Grain gr;
 	if(argc==1){
 		finp=fopen("pack.inp","r");
 	}else{
 		finp=fopen(argv[1],"r");
+		puts(argv[1]);
 	}
 	int dist;	// 0:uniform, 1:Gamma distribution
 
 //	--------------------------------------------------
 
+	fgets(cbff,128,finp);
+	fscanf(finp,"%d\n",&seed);
+	printf("seed=%d\n",seed);
 	fgets(cbff,128,finp);
 	fscanf(finp,"%s\n",fout);
 	fgets(cbff,128,finp);
@@ -152,7 +156,7 @@ int main(int argc, char *argv[]){
 		};
 		S0+=gr.area();
 		pr=1.0-S0/(Wd[0]*Wd[1]);
-		printf("pr=%lf, ra=%lf\n",pr,gr.ra);
+		//printf("pr=%lf, ra=%lf\n",pr,gr.ra);
 		np++;
 	};
 	printf("np=%d\n",np);
