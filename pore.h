@@ -57,6 +57,8 @@ class PoreCells:public Tree4{
 		void fwrite_cells(char fn[128]);
 		void load_cell_data(char fn[128]);
 		void write_leaves();
+		int ngap;		// inter-particle gap = 1:closed , 2:open
 	private:
 };
+void copy_PoreCell_data(PoreCells *pc_From, PoreCells *pc_To);
 //---------------------------------------------------------------------------------

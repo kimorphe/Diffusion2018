@@ -100,24 +100,38 @@ void PoreCells::setup(
 		cells[i].phs_bff=0;
 	};
 
+	//ngap=1:closed, 2: open 
 	isum=0;
 	iad=0;
-	int ix,iy;
+	int ix,iy,nin;
 	for(i=0;i<Nx;i++){
 		xf[0]=Xa[0]+dx[0]*(i+0.5);
 	for(j=0;j<Ny;j++){
 		xf[1]=Xa[1]+dx[1]*(j+0.5);
 		ityp=QtreeFind(&qp0,xf);
-		if(ityp>0){
+
+		if(ityp==2){	// exterior cell
 			cells[iad].ID=isum;	// linear grid index 
 			cells[iad].iad=iad;	// data address in cells[iad];
-			cells[iad].bnd=false;
-			if(ityp==1) cells[iad].bnd=true;
 			iad++;
 		}	// end if
+		if(ityp==1){	// boundary cell
+			nin=0;
+			for(m=0;m<nelp;m++){	// count solid phase containing the boundary cell 
+				if(els[m].is_in(xf)) nin++;
+			}
+			if(nin < ngap){	// inter-particle gap made close/open (ngap=1,2,resp.)
+				cells[iad].ID=isum;	// linear grid index 
+				cells[iad].iad=iad;	// data address in cells[iad];
+				cells[iad].bnd=true;
+			iad++;
+			}
+		}
 		isum++;
+
 	}	// end_j
 	}	// end_i
+	ncell=iad;
 	printf("iad=%d\n",iad);
 };
 void PoreCells::l2ij(int l, int *i, int *j){
@@ -601,4 +615,17 @@ void PoreCells::load_cell_data(char fn[128]){
 };
 void PoreCells::write_leaves(){
 	Tree4::draw();
+};
+
+void copy_PoreCell_data(PoreCells *pc_From, PoreCells *pc_To){
+
+	int iad,id;
+	Cell cell_from;
+	for(int i=0;i<pc_From->ncell;i++){
+		cell_from=pc_From->cells[i];
+		id=cell_from.ID;
+		iad=pc_To->find(id);
+		if(iad==-1) continue;
+		pc_To->cells[iad].phs=cell_from.phs;
+	};
 };
