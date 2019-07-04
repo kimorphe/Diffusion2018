@@ -37,6 +37,7 @@ class PoreCells:public Tree4{
 		double Sr;	// degree of water saturation
 		int n_void,n_water; // number of gas and fluid cells, resp.
 		int init(double sr); // initialize phase distribution
+		int setup_phs_list(); // setup phase lists
 		int *indx_w;	// index set of fluid phase
 		int *indx_v;	// index set of gas phase
 		double cell_energy(int iad); // evaluate interfacial energy/cell
@@ -61,4 +62,5 @@ class PoreCells:public Tree4{
 	private:
 };
 void copy_PoreCell_data(PoreCells *pc_From, PoreCells *pc_To);
+void refine_PoreCell_data(PoreCells *pc_From, PoreCells *pc_To);
 //---------------------------------------------------------------------------------

@@ -20,12 +20,14 @@ int main(int argc, char *argv[]){
 	double Xa[2]; // Unit Cell position (lowerleft vertex)
 	char fsld[128];	// solid phase data file (input)
 	char fout[128];	// pore coverning cell data (output)
+	char foutc[128];	// pore coverning cell data (output)
 	double thE; // contact angle
 	double Sr;	// degree of saturation
 	double T1,T2;
 	int nstep;
 	int seed;
-	int ngap;	// inter-particle gap (1:closed, 2:open)
+	int rstat;	// restart (0:No, 1: yes)
+	char f_rstat[128]; // file name (import data for restar MC)
 
 //	---------------------------------------
 	FILE *fp;
@@ -41,14 +43,16 @@ int main(int argc, char *argv[]){
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fsld);
 	fgets(cbff,128,fp);
+	fscanf(fp,"%d\n",&rstat);
+	fgets(cbff,128,fp);
+	fscanf(fp,"%s\n",f_rstat);
+	printf("%s\n",f_rstat);
+
+	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fout);
+	fscanf(fp,"%s\n",foutc);
 	fgets(cbff,128,fp);
 	fscanf(fp,"%d\n",&seed);
-//
-	fgets(cbff,128,fp);
-	fscanf(fp,"%d\n",&ngap);
-	ngap=2;
-//
 	fgets(cbff,128,fp);
 	fscanf(fp,"%d\n",&Lev);
 	fgets(cbff,128,fp);
@@ -62,7 +66,8 @@ int main(int argc, char *argv[]){
 	fgets(cbff,128,fp);
 	fscanf(fp,"%le,%le\n",&T1,&T2);
 	fgets(cbff,128,fp);
-	fscanf(fp,"%d\n",&nstep);
+	double rstep;
+	fscanf(fp,"%lf\n",&rstep);
 	fclose(fp);
 //	---------------------------------------
 
@@ -73,7 +78,7 @@ int main(int argc, char *argv[]){
 	double Etot0,Etot;
 	PoreCells Pcll,Pcllc;
 	Pcll.load_gmm(thE);	// set contact angle thE
-	Pcll.ngap=ngap;		// set inter-particle gap (1:close,2:open) 
+	Pcll.ngap=2;		// set inter-particle gap (1:close,2:open) 
 	Pcll.qp0.refine[0]=true;// set parameter to refine pore space plus boundary
 	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
 
@@ -85,9 +90,21 @@ int main(int argc, char *argv[]){
 	Pcllc.connect(); // establish connection among pore coverning cells
 
 	Pcll.connect(); // establish connection among pore coverning cells
-	Pcll.init(Sr);	// initialize phase distribution
+	if(rstat==0){ //fresh start
+		Pcll.init(Sr);	// initialize phase distribution
+	}else{	// restart
+		PoreCells pc0;
+		pc0.load_cell_data(f_rstat);
+		Pcll.Sr=pc0.Sr;
+		puts("Copying data...");
+		refine_PoreCell_data(&pc0,&Pcll);
+		puts("Done");
+		Pcll.setup_phs_list();
+	};
 	Pcll.fwrite_cells(ftmp);
 
+	nstep=Pcll.n_water*rstep;
+	printf("Total MC steps =%d\n",nstep);
 	Temp_Hist TH(T1,T2,nstep);
 
 	int i,j,jmax=100;
@@ -123,8 +140,8 @@ int main(int argc, char *argv[]){
 	Pcll.write_leaves();
 
 	copy_PoreCell_data(&Pcll,&Pcllc);
-	sprintf(fout,"pore_c.dat");
-	Pcllc.fwrite_cells(fout);
+	//sprintf(fout,"pore_c.dat");
+	Pcllc.fwrite_cells(foutc);
 
 	return(0);
 };

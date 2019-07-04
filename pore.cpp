@@ -196,6 +196,26 @@ void PoreCells::connect(){
 	};
 	fclose(fp);
 };
+int PoreCells::setup_phs_list(){
+	n_water=0;
+	n_void=0;
+	for(int i=0;i<ncell;i++){
+		if(cells[i].phs==0) n_void++;	// void
+		if(cells[i].phs==1) n_water++;	// fluid
+	}
+	if((n_water+n_void-ncell)!=0){
+		printf("Erorr!! n_water+n_void !=ncell\n");
+		exit(-1);
+	};
+	indx_w=(int *)malloc(sizeof(int)*n_water);
+	indx_v=(int *)malloc(sizeof(int)*n_void);
+
+	int iw=0,iv=0;
+	for(int i=0;i<ncell;i++){
+		if(cells[i].phs==0) indx_v[iv++]=i;	// void
+		if(cells[i].phs==1) indx_w[iw++]=i;	// fluid
+	};
+};
 
 int PoreCells::init(double sr){
 
@@ -226,8 +246,6 @@ int PoreCells::init(double sr){
 	};
 	printf("ncell=%d\n",ncell);
 	printf("n_water=%d, n_void=%d\n",n_water,n_void);
-	printf("iv,iw=%d, %d\n",iv,iw);
-	printf("iw=%d, iv=%d\n",iw,iv);
 	return(n_water);
 };
 void PoreCells::load_gmm(
@@ -607,6 +625,7 @@ void PoreCells::load_cell_data(char fn[128]){
 		cells[i].ID=ID;
 		cells[i].phs=phs;
 		cells[i].bnd=true;
+		cells[i].iad=i;
 		if(bnd==0) cells[i].bnd=false;
 	};
 
@@ -628,4 +647,47 @@ void copy_PoreCell_data(PoreCells *pc_From, PoreCells *pc_To){
 		if(iad==-1) continue;
 		pc_To->cells[iad].phs=cell_from.phs;
 	};
+};
+void refine_PoreCell_data(	// copy phase data to a finner cell data
+	PoreCells *pc0, 	// low resolution data (copy from)
+	PoreCells *pc1		// high resolution data (copy to)
+){
+	int Nd0[2],Nd1[2];
+	Nd0[0]=pc0->Nx; Nd0[1]=pc0->Ny;
+	Nd1[0]=pc1->Nx; Nd1[1]=pc1->Ny;
+	if(Nd0[0]>Nd1[0]){
+		printf("Error in copying cell data !\n");
+		printf("Destination cell data must have a higher resolution than the orign\n");
+		exit(-1);
+	}
+
+	double dx0[2],dx1[2],Xa[2],Wd[2];
+
+	int j;
+	for(j=0; j<2; j++){
+		Xa[j]=pc0->Xa[j];
+		Wd[j]=pc0->Wd[j];
+		dx0[j]=Wd[j]/Nd0[j];
+		dx1[j]=Wd[j]/Nd1[j];
+	};
+
+	int id0,iad0;
+	int id1,iad1;
+	int indx0[2],indx1[2];
+	double xf[2];
+	for(iad1=0; iad1< pc1->ncell; iad1++){
+		id1=pc1->cells[iad1].ID;	
+		indx1[0]=id1/Nd1[1];
+		indx1[1]=id1%Nd1[1];
+		for(j=0;j<2;j++) {
+			xf[j]=(indx1[j]+0.5)*dx1[j];
+			indx0[j]=int(xf[j]/dx0[j]);
+		}
+		id0=indx0[0]*Nd0[1]+indx0[1];
+		iad0=pc0->find(id0);
+		if(iad0<0) continue;
+		pc1->cells[iad1].phs=pc0->cells[iad0].phs;
+	};
+	pc1->setup_phs_list();
+
 };
