@@ -136,12 +136,12 @@ int main(int argc, char *argv[]){
 	fgets(cbff,128,finp);
 	fscanf(finp,"%le,%le\n",&T1,&T2);
 	fgets(cbff,128,finp);
-	fscanf(finp,"%d\n",&nstep);
-	printf("nstep=%d\n",nstep);
+	double rstep;
+	//fscanf(finp,"%d\n",&nstep);
+	fscanf(finp,"%lf\n",&rstep);
 	fclose(finp);
 //	--------------------------------------------------
 
-	Temp_Hist TH(T1,T2,nstep);
 	gr.init_rand(seed);
 	double S0=0.0,pr=1.0;
 	int np=0;
@@ -162,6 +162,10 @@ int main(int argc, char *argv[]){
 	printf("np=%d\n",np);
 	printf("minimum achievable porosity =%lf\n",pr);
 	gr.init_rand(seed);
+
+	nstep=np*rstep;
+	printf("nstep=%d\n",nstep);
+	Temp_Hist TH(T1,T2,nstep);
 
 	Solid sld(np);
 	sld.set_domain(Xa,Wd);

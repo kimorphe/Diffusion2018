@@ -85,8 +85,9 @@ void PoreCells::setup(
 	Tree4::set_grid_params(); // set regular grid parameters
 	Tree4::draw();
 
-	double *xc,xf[2],xg[2];
+	double *xc,xf[2],xg[2],yf[2];
 	int i,j,k,l,m;
+	//,ii,jj,incld[4];
 	int ityp,jtyp,isum,iad;
 
 	ncell=0;
@@ -117,14 +118,25 @@ void PoreCells::setup(
 		}	// end if
 		if(ityp==1){	// boundary cell
 			nin=0;
+			//for(ii=0;ii<4;ii++) incld[ii]=0;
 			for(m=0;m<nelp;m++){	// count solid phase containing the boundary cell 
 				if(els[m].is_in(xf)) nin++;
+				//for(ii=0;ii<2;ii++){
+			//		yf[0]=Xa[0]+dx[0]*(ii+i);
+			//	for(jj=0;jj<2;jj++){
+			//		yf[1]=Xa[1]+dx[1]*(jj+j);
+			//		if(els[m].is_in(yf)) incld[ii*2+jj]++;
+			//	}
+			//	}
 			}
+			//vin=0;
+			//for(ii=0;ii<4;ii++){ if(incld[ii]>0)  vin++; }
 			if(nin < ngap){	// inter-particle gap made close/open (ngap=1,2,resp.)
+			//if(nin <= ngap){	// inter-particle gap made close/open (ngap=2,3,resp.)
 				cells[iad].ID=isum;	// linear grid index 
 				cells[iad].iad=iad;	// data address in cells[iad];
 				cells[iad].bnd=true;
-			iad++;
+				iad++;
 			}
 		}
 		isum++;

@@ -79,11 +79,13 @@ int main(int argc, char *argv[]){
 	PoreCells Pcll,Pcllc;
 	Pcll.load_gmm(thE);	// set contact angle thE
 	Pcll.ngap=2;		// set inter-particle gap (1:close,2:open) 
+//	Pcll.ngap=3;		// set inter-particle gap (2:close,3:open) 
 	Pcll.qp0.refine[0]=true;// set parameter to refine pore space plus boundary
 	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
 
 	Pcllc.load_gmm(thE);
 	Pcllc.ngap=1;
+//	Pcllc.ngap=2;
 	Pcllc.qp0.refine[0]=true;
 	Pcllc.Sr=Sr;
 	Pcllc.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
@@ -118,6 +120,7 @@ int main(int argc, char *argv[]){
 		i=0;
 		Evar=0.0;
 		nswap_sum=0;
+		printf("j=%d\n",j);
 		while(TH.cont_iteration){
 			TH.inc_Temp_exp();
 			dE=Pcll.MC_stepping(TH,&nswap,seed);
