@@ -31,11 +31,17 @@ int main(int argc, char *argv[]){
 
 //	---------------------------------------
 	FILE *fp;
+	char fnm[128];
 	if(argc >1){
-		fp=fopen(argv[1],"r");
+		sprintf(fnm,"%s",argv[1]);
 	}else{
-		fp=fopen("wet.inp","r");
+		sprintf(fnm,"%s","wet.inp");
 	}
+	fp=fopen(fnm,"r");
+	if(fp==NULL){
+		printf("Error !! Can't open file:%s\n",fnm);
+		exit(-1);
+	};
 	FILE *fo=fopen("wet.erg","w");
 	char cbff[128];
 	double tmp;

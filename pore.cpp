@@ -635,7 +635,13 @@ int PoreCells::grid_loc(int i, int j){
 	return(ityp);	// 0:interior, 1:interfacial , 2:exterior points 
 };
 void PoreCells::load_cell_data(char fn[128]){
-	FILE *fp=fopen(fn,"r");
+	FILE *fp;
+	
+	fp=fopen(fn,"r");
+	if(fp==NULL){
+		printf("Error !! Can't open file :%s\n",fn);
+		exit(-1);
+	};
 	char cbff[128];
 	double th;
 

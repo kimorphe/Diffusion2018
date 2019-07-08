@@ -14,6 +14,10 @@
 #include "pore.h"
 using namespace std;
 
+void show_msg(char fnm[128]){
+	printf("Error !! Can't open file: %s\n",fnm);
+	exit(-1);
+};
 int main(int argc, char *argv[]){
 	char fdat[128];	// input  (pore cell data)
 	char fsld[128]; // solid phase data
@@ -28,11 +32,15 @@ int main(int argc, char *argv[]){
 	Solid sld;
 
 //	----------------------------------
+	char fnm[128];
 	if(argc==1){
-		fp=fopen("rwk.inp","r");
+		sprintf(fnm,"%s","rwk.inp");
+		fp=fopen(fnm,"r");
 	}else{
+		sprintf(fnm,"%s",argv[1]);
 		fp=fopen(argv[1],"r");
 	};
+	if(fp==NULL) show_msg(fnm);
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fdat);
 	fgets(cbff,128,fp);
@@ -71,10 +79,8 @@ int main(int argc, char *argv[]){
 	int i,j,k,iad=0,ID=0;
 	int nbnd=0;
 	double xf[2];
-//	FILE *fff=fopen("all_node.dat","w");
 	for(i=0; i<Pcll.Nx; i++){
 	for(j=0; j<Pcll.Ny; j++){
-//		if(Pcll.grid_type(i,j)==1 || Pcll.grid_loc(i,j)==1){
 		if(Pcll.grid_type(i,j)==1){ // fluid cell grid
 			gd.NDs[iad].id=ID;
 			gd.NDs[iad].iad=iad;
@@ -83,16 +89,14 @@ int main(int argc, char *argv[]){
 				xf[0]=Pcll.Xa[0]+i*Pcll.dx[0];
 				xf[1]=Pcll.Xa[1]+j*Pcll.dx[1];
 				gd.NDs[iad].sld=sld.is_in(xf);
-			       	if(gd.NDs[iad].sld) printf("%lf %lf\n",xf[0],xf[1]);
+			       	//if(gd.NDs[iad].sld) printf("%lf %lf\n",xf[0],xf[1]);
 			}
 			iad++;
-//				xf[0]=Pcll.Xa[0]+i*Pcll.dx[0]; xf[1]=Pcll.Xa[1]+j*Pcll.dx[1]; fprintf(fff,"%lf %lf\n",xf[0],xf[1]);
 
 		};
 		ID++;
 	}
 	}
-//	fclose(fff);
 	printf("ng=%d,iad_final=%d\n",ng,iad);
 	printf("nbnd=%d\n",nbnd);
 
@@ -121,7 +125,6 @@ int main(int argc, char *argv[]){
 			if(gd.NDs[l].sld && gd.NDs[iad].sld){
 				gd.NDs[l].cnct[k]=-1;
 				gd.NDs[l].cnds[k]=NULL;
-//				printf("link deleted\n");
 			}else{
 				gd.NDs[l].cnds[k]=gd.NDs+iad;
 				nc++;
@@ -155,3 +158,4 @@ int main(int argc, char *argv[]){
 
 	return(0);
 };
+

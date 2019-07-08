@@ -1503,7 +1503,13 @@ void Solid::write(char fn[128]){
 	fclose(fp);
 };
 void Solid::load(char fn[128]){
-	FILE *fp=fopen(fn,"r");
+	FILE *fp;
+	
+	fp=fopen(fn,"r");
+	if(fp==NULL){
+		printf("Error!! Can't open file:%s\n",fn);	
+		exit(-1);
+	};
 	Ellip el;
 	fscanf(fp,"%d\n",&nelp);
 	printf("nelp=%d\n",nelp);
