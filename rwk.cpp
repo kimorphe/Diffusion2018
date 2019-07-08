@@ -16,6 +16,7 @@ using namespace std;
 
 int main(int argc, char *argv[]){
 	char fdat[128];	// input  (pore cell data)
+	char fsld[128]; // solid phase data
 	char fout[128]; // output (walker position)
 	char fu2b[128]; // output (square mean displacement)
 	int nwk;	// number of walkers
@@ -23,6 +24,8 @@ int main(int argc, char *argv[]){
 	int nout,inc; 	// output times and step increment
 	char cbff[128];
 	FILE *fp;
+
+	Solid sld;
 
 //	----------------------------------
 	if(argc==1){
@@ -32,6 +35,8 @@ int main(int argc, char *argv[]){
 	};
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fdat);
+	fgets(cbff,128,fp);
+	fscanf(fp,"%s\n",fsld);
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fout);
 	fgets(cbff,128,fp);
@@ -50,6 +55,9 @@ int main(int argc, char *argv[]){
 	printf("inc=%d\n",inc);
 	fclose(fp);
 //	----------------------------------
+	puts(fsld);
+	sld.load(fsld);	// import solid phase data
+	puts(fsld);
 
 
 	PoreCells Pcll;
@@ -58,20 +66,35 @@ int main(int argc, char *argv[]){
 	printf("number of grids=%d\n",ng);
 	Grid gd(ng);
 	gd.set_grid_params(Pcll.Xa,Pcll.Xb,Pcll.Nx,Pcll.Ny);
+	sld.bbox.setup(gd.Xa,gd.Wd); // set bounding box
 
 	int i,j,k,iad=0,ID=0;
+	int nbnd=0;
+	double xf[2];
+//	FILE *fff=fopen("all_node.dat","w");
 	for(i=0; i<Pcll.Nx; i++){
 	for(j=0; j<Pcll.Ny; j++){
 //		if(Pcll.grid_type(i,j)==1 || Pcll.grid_loc(i,j)==1){
-		if(Pcll.grid_type(i,j)==1){
-		       gd.NDs[iad].id=ID;
-		       gd.NDs[iad].iad=iad;
-		       iad++;
+		if(Pcll.grid_type(i,j)==1){ // fluid cell grid
+			gd.NDs[iad].id=ID;
+			gd.NDs[iad].iad=iad;
+			gd.NDs[iad].sld=false;
+			if(Pcll.is_bnd_cell_grid(i,j)){
+				xf[0]=Pcll.Xa[0]+i*Pcll.dx[0];
+				xf[1]=Pcll.Xa[1]+j*Pcll.dx[1];
+				gd.NDs[iad].sld=sld.is_in(xf);
+			       	if(gd.NDs[iad].sld) printf("%lf %lf\n",xf[0],xf[1]);
+			}
+			iad++;
+//				xf[0]=Pcll.Xa[0]+i*Pcll.dx[0]; xf[1]=Pcll.Xa[1]+j*Pcll.dx[1]; fprintf(fff,"%lf %lf\n",xf[0],xf[1]);
+
 		};
 		ID++;
 	}
 	}
+//	fclose(fff);
 	printf("ng=%d,iad_final=%d\n",ng,iad);
+	printf("nbnd=%d\n",nbnd);
 
 
 	int l,i0,j0;
@@ -95,8 +118,14 @@ int main(int argc, char *argv[]){
 			if(j>=gd.Ny) j-=gd.Ny;
 			iad=gd.find(i*gd.Ny+j);
 			if(iad==-1) puts("ERROR!!");
-			gd.NDs[l].cnds[k]=gd.NDs+iad;
-			nc++;
+			if(gd.NDs[l].sld && gd.NDs[iad].sld){
+				gd.NDs[l].cnct[k]=-1;
+				gd.NDs[l].cnds[k]=NULL;
+//				printf("link deleted\n");
+			}else{
+				gd.NDs[l].cnds[k]=gd.NDs+iad;
+				nc++;
+			}
 		}
 	};
 	printf("nc(mean)=%lf\n",nc/(float)ng);

@@ -200,9 +200,8 @@ void Grid::setup_walkers(int n, int seed){
 	std::uniform_int_distribution<int>MTN(0,Ng-1);
 	int i,iad;
 	double x0,y0;
+	/*
 	for(i=0;i<nwk;i++){
-//		iad=int(MT01(engine)*Ng)%Ng;
-//		iad=int(MT01(engine)*Ng-1);
 		iad=MTN(engine);
 		wks[i].nd0=&NDs[iad];
 		wks[i].ofx=0;
@@ -212,6 +211,22 @@ void Grid::setup_walkers(int n, int seed){
 		wks[i].y0=y0;
 		wks[i].xn=x0;
 		wks[i].yn=y0;
+	};
+
+	*/
+	i=0;
+	while(i<nwk){
+		iad=MTN(engine);
+		if(NDs[iad].sld) continue;
+		wks[i].nd0=&NDs[iad];
+		wks[i].ofx=0;
+		wks[i].ofy=0;
+		grid_cod(wks[i].nd0->iad,&x0,&y0);
+		wks[i].x0=x0;
+		wks[i].y0=y0;
+		wks[i].xn=x0;
+		wks[i].yn=y0;
+		i++;
 	};
 };
 void Grid::init_rand(int seed){

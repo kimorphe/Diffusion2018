@@ -87,7 +87,7 @@ void PoreCells::setup(
 
 	double *xc,xf[2],xg[2],yf[2];
 	int i,j,k,l,m;
-	//,ii,jj,incld[4];
+	int ii,jj;
 	int ityp,jtyp,isum,iad;
 
 	ncell=0;
@@ -104,7 +104,8 @@ void PoreCells::setup(
 	//ngap=1:closed, 2: open 
 	isum=0;
 	iad=0;
-	int ix,iy,nin;
+	int ix,iy,nin,nin_el;
+	bool is_in;
 	for(i=0;i<Nx;i++){
 		xf[0]=Xa[0]+dx[0]*(i+0.5);
 	for(j=0;j<Ny;j++){
@@ -118,21 +119,35 @@ void PoreCells::setup(
 		}	// end if
 		if(ityp==1){	// boundary cell
 			nin=0;
-			//for(ii=0;ii<4;ii++) incld[ii]=0;
+			nin_el=0;
 			for(m=0;m<nelp;m++){	// count solid phase containing the boundary cell 
 				if(els[m].is_in(xf)) nin++;
-				//for(ii=0;ii<2;ii++){
-			//		yf[0]=Xa[0]+dx[0]*(ii+i);
-			//	for(jj=0;jj<2;jj++){
-			//		yf[1]=Xa[1]+dx[1]*(jj+j);
-			//		if(els[m].is_in(yf)) incld[ii*2+jj]++;
-			//	}
-			//	}
+				is_in=false;
+				for(ii=0;ii<2;ii++){
+					yf[0]=Xa[0]+dx[0]*(ii+i);
+				for(jj=0;jj<2;jj++){
+					yf[1]=Xa[1]+dx[1]*(jj+j);
+					if(els[m].is_in(yf)) is_in=true;
+				}
+				}
+				if(is_in) nin_el++;
 			}
-			//vin=0;
-			//for(ii=0;ii<4;ii++){ if(incld[ii]>0)  vin++; }
+			/*
 			if(nin < ngap){	// inter-particle gap made close/open (ngap=1,2,resp.)
-			//if(nin <= ngap){	// inter-particle gap made close/open (ngap=2,3,resp.)
+				cells[iad].ID=isum;	// linear grid index 
+				cells[iad].iad=iad;	// data address in cells[iad];
+				cells[iad].bnd=true;
+				iad++;
+			}
+			*/
+
+			if(ngap==2){	// open throat model 
+				cells[iad].ID=isum;	// linear grid index 
+				cells[iad].iad=iad;	// data address in cells[iad];
+				cells[iad].bnd=true;
+				iad++;
+			}else if(nin==0){
+				//(nin_el<2){ // close throat model
 				cells[iad].ID=isum;	// linear grid index 
 				cells[iad].iad=iad;	// data address in cells[iad];
 				cells[iad].bnd=true;
@@ -140,7 +155,6 @@ void PoreCells::setup(
 			}
 		}
 		isum++;
-
 	}	// end_j
 	}	// end_i
 	ncell=iad;
@@ -525,6 +539,26 @@ int PoreCells::grid_type(int i, int j){
 	}
 
 	return(ityp);	// 0:gas, 1:fluid, 2:solid
+};
+bool PoreCells::is_bnd_cell_grid(int i, int j){
+
+	int k,l,ix,iy,m,iad;
+	for(k=-1; k<1; k++){	
+		ix=i+k;
+		if(ix<0) ix+=Nx;
+		if(ix>=Nx) ix-=Nx;
+	for(l=-1; l<1;l++){	
+		iy=j+l;
+		if(iy<0) iy+=Ny;
+		if(iy>=Ny) iy-=Ny;
+		m=ix*Ny+iy;
+		iad=find(m);
+
+		if(iad==-1) continue;
+		if(cells[iad].bnd) return(true);
+	}
+	}
+	return(false);
 };
 
 void PoreCells::grid_connect(int i0, int j0, int cnct[4]){

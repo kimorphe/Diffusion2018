@@ -1518,6 +1518,24 @@ void Solid::load(char fn[128]){
 	};
 	fclose(fp);
 };
+bool Solid::is_in(double xf[2]){
+
+	int i,j,k;
+	bool iin=false;
+	double yf[2];
+	for(k=0;k<nelp;k++){
+		for(i=-1;i<=1;i++){
+			yf[0]=xf[0]+bbox.Wd[0]*i;
+		for(j=-1;j<=1;j++){
+			yf[1]=xf[1]+bbox.Wd[1]*j;
+			if(els[k].is_in(yf)){
+				return(true);
+			} 
+		}
+		}
+	};
+	return(false);
+};
 double Solid::MC(Temp_Hist TH){
 	double PI=4.0*atan(1.0);
 	int ip;

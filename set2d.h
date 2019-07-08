@@ -133,6 +133,7 @@ class Solid{
 		void set_domain(double Xa[2], double Wd[2]);
 		double s_over;	// overlapped area ratio
 		double poro;
+		bool is_in(double xf[2]);
 	private:
 	protected:
 };

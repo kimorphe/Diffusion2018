@@ -7,6 +7,7 @@ class Node{
 		Node();	//default constructor
 		int nc;
 		double x0,y0;
+		bool sld;	// solid phase grid (true/false)
 	private:
 };
 class Walker{	// Random Walker
