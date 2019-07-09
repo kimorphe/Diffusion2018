@@ -67,9 +67,7 @@ int main(int argc, char *argv[]){
 	printf("inc=%d\n",inc);
 	fclose(fp);
 //	----------------------------------
-	puts(fsld);
 	sld.load(fsld);	// import solid phase data
-	puts(fsld);
 
 
 	PoreCells Pcll;

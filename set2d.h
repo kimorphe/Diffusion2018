@@ -134,6 +134,8 @@ class Solid{
 		double s_over;	// overlapped area ratio
 		double poro;
 		bool is_in(double xf[2]);
+		int is_in_count(double xf[2]);
+		int is_in_num(double xf[2]);
 	private:
 	protected:
 };

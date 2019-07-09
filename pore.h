@@ -14,6 +14,8 @@ class Cell{
 		QPatch *qp0;
 		int cnct[8];//connected ?
 		Cell *cncl[8]; //pointer to connected cells
+		int cnct4[4];//connected ?
+		Cell *cncl4[4]; //pointer to connected cells
 		int nc;	// number  of connected cells
 		Cell();	// constructuor
 		bool bnd; // boundary cell (T/F)
@@ -25,6 +27,14 @@ class Cell{
 		double erg_bff;
 	private:
 };
+class cWalker{
+	public:
+		Cell *cl0;
+		double x0,y0;
+		double xn,yn;
+		int ofx,ofy;
+	private:
+};
 class PoreCells:public Tree4{
 	public:
 		int ncell; 	// number of cells
@@ -33,6 +43,7 @@ class PoreCells:public Tree4{
 		void setup(Ellip *els,int nelp,bool set_opr, int Lev_Max,Bbox bx); // generate cells 
 		int find(int id);	// find cell having a given linear grid number(id).
 		void connect();	// establish neghboring cell connection 
+		void connect4();	// establish neghboring cell connection 
 		void l2ij(int l, int *i, int *j); // index transform ( linear to 2D index)
 		double Sr;	// degree of water saturation
 		int n_void,n_water; // number of gas and fluid cells, resp.
@@ -60,6 +71,13 @@ class PoreCells:public Tree4{
 		void load_cell_data(char fn[128]);
 		void write_leaves();
 		int ngap;		// inter-particle gap = 1:closed , 2:open
+		int nwk;	// number of random walkers
+		cWalker *wks;	// random walker array
+		void setup_walkers(int n, int mseed);
+		void rwk(int seed);
+		double mean_u2();
+		void mean_u(double *ux, double *uy);
+		void write_wks(char fname[128],int istp);
 	private:
 };
 void copy_PoreCell_data(PoreCells *pc_From, PoreCells *pc_To);

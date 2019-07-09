@@ -89,6 +89,9 @@ void PoreCells::setup(
 	int i,j,k,l,m;
 	int ii,jj;
 	int ityp,jtyp,isum,iad;
+	Solid sld(nelp);
+	sld.set_domain(Xa,Wd);
+	sld.els=els;
 
 	ncell=0;
 	for(i=0;i<n_leaves;i++){
@@ -104,8 +107,10 @@ void PoreCells::setup(
 	//ngap=1:closed, 2: open 
 	isum=0;
 	iad=0;
-	int ix,iy,nin,nin_el;
-	bool is_in;
+	int ix,iy,nin,nin_el,jsum;
+	bool is_in,ipore;
+	int enums[4];
+	int il,ir;
 	for(i=0;i<Nx;i++){
 		xf[0]=Xa[0]+dx[0]*(i+0.5);
 	for(j=0;j<Ny;j++){
@@ -120,6 +125,7 @@ void PoreCells::setup(
 		if(ityp==1){	// boundary cell
 			nin=0;
 			nin_el=0;
+			/*
 			for(m=0;m<nelp;m++){	// count solid phase containing the boundary cell 
 				if(els[m].is_in(xf)) nin++;
 				is_in=false;
@@ -132,6 +138,9 @@ void PoreCells::setup(
 				}
 				if(is_in) nin_el++;
 			}
+			*/
+			nin=sld.is_in_count(xf);
+
 			/*
 			if(nin < ngap){	// inter-particle gap made close/open (ngap=1,2,resp.)
 				cells[iad].ID=isum;	// linear grid index 
@@ -148,12 +157,37 @@ void PoreCells::setup(
 				cells[iad].bnd=true;
 				iad++;
 				}
-			}else if(nin==0){
+			//}else if(nin==0){
+			}else if(nin<2){
 				//(nin_el<2){ // close throat model
-				cells[iad].ID=isum;	// linear grid index 
-				cells[iad].iad=iad;	// data address in cells[iad];
-				cells[iad].bnd=true;
-				iad++;
+				//
+				jsum=0;
+				for(ii=0;ii<2;ii++){
+					yf[0]=Xa[0]+dx[0]*(ii+i);
+				for(jj=0;jj<2;jj++){
+					yf[1]=Xa[1]+dx[1]*(jj+j);
+					enums[jsum]=sld.is_in_num(yf);
+					jsum++;
+				}
+				}
+				ipore=true;
+				if(enums[0]!=-1){
+					il=enums[0]; ir=il;
+					if(enums[3]!=-1) ir=enums[3];
+					if(il-ir!=0) ipore=false;
+				}
+				if(enums[1]!=-1){
+					il=enums[1]; ir=il;
+					if(enums[2]!=-1) ir=enums[2];
+					if(il-ir!=0) ipore=false;
+				}
+
+				if(ipore){
+					cells[iad].ID=isum;	// linear grid index 
+					cells[iad].iad=iad;	// data address in cells[iad];
+					cells[iad].bnd=true;
+					iad++;
+				}
 			}
 		}
 		isum++;
@@ -192,7 +226,10 @@ int PoreCells::find(int id){
 };
 
 void PoreCells::connect(){
-	FILE *fp=fopen("temp.out","w");
+//	
+//	Check if cells[ncell].cnct[4] is initialized to -1
+//		(Memo: 0709/2019)
+//		
 	int ic;
 	int i,j,k,l,m;
 	int ix,iy,id,iad;
@@ -219,11 +256,44 @@ void PoreCells::connect(){
 			};
 		}
 		}
-		fprintf(fp,"cell no.=%d, ID=%d\n",ic,cells[ic].ID);
-		fprintf(fp," number of connected nodes=%d\n",cells[ic].nc);
 	};
-	fclose(fp);
 };
+void PoreCells::connect4(){
+	int ic;
+	int i,j,k;
+	int ix,iy,id,iad;
+	int iofst[4]={0,1,0,-1};
+	int jofst[4]={-1,0,1,0};
+
+	int phs0=1;	// fluid phase
+	for(ic=0; ic<ncell;ic++){
+		if(cells[ic].phs!=phs0) continue;
+
+		l2ij(cells[ic].ID,&i,&j);
+		cells[ic].nc=0;
+		for(k=0; k<4; k++){
+			ix=i+iofst[k];
+			iy=j+jofst[k];
+
+			if(ix<0) ix+=Nx;
+			if(ix>=Nx) ix-=Nx;
+
+			if(iy<0) iy+=Ny;
+			if(iy>=Ny) iy-=Ny;
+
+
+			id=ix*Ny+iy;
+			iad=find(id);
+			cells[ic].cnct4[k]=iad;
+
+			if(iad==-1) continue;
+			if(cells[iad].phs!=phs0) continue;
+			cells[ic].cncl4[k]=cells+iad;
+			cells[ic].nc++;
+		}
+	};
+};
+
 int PoreCells::setup_phs_list(){
 	n_water=0;
 	n_void=0;
@@ -674,6 +744,8 @@ void PoreCells::load_cell_data(char fn[128]){
 	cells=(Cell *)malloc(sizeof(Cell)*ncell); // allocate memory
 
 	int ID,phs,bnd;
+	n_water=0;
+	n_void=0;
 	for(int i=0;i<ncell;i++){
 		fscanf(fp,"%d %d %d\n",&ID, &phs, &bnd);
 		cells[i].ID=ID;
@@ -681,8 +753,9 @@ void PoreCells::load_cell_data(char fn[128]){
 		cells[i].bnd=true;
 		cells[i].iad=i;
 		if(bnd==0) cells[i].bnd=false;
+		if(phs==0) n_void++;
+		if(phs==1) n_water++;
 	};
-
 
 	fclose(fp);
 };
@@ -744,4 +817,102 @@ void refine_PoreCell_data(	// copy phase data to a finner cell data
 	};
 	pc1->setup_phs_list();
 
+};
+
+void PoreCells::setup_walkers(int n, int seed){
+	nwk=n;
+	wks=(cWalker *)malloc(sizeof(Walker)*nwk);
+
+	std::mt19937_64 engine(seed);
+	std::uniform_real_distribution<double>MT01(0.0,1.0);
+	std::uniform_int_distribution<int>MTN(0,ncell-1);
+	int i,iad,ix,iy;
+	double x0,y0;
+
+	int phs0=1;
+	i=0;
+	while(i<nwk){
+		iad=MTN(engine);
+		if(cells[iad].phs!=phs0) continue;
+		wks[i].cl0=&cells[iad];
+		wks[i].ofx=0;
+		wks[i].ofy=0;
+		ix=cells[iad].ID/Ny;
+		iy=cells[iad].ID%Ny;
+		x0=Xa[0]+(ix+0.5)*dx[0];
+		y0=Xa[1]+(iy+0.5)*dx[1];
+		wks[i].x0=x0;
+		wks[i].y0=y0;
+		wks[i].xn=x0;
+		wks[i].yn=y0;
+		i++;
+	};
+};
+void PoreCells::rwk(int seed){
+	static std::mt19937_64 eng(seed);
+	std::uniform_int_distribution<int>irnd(0,3);
+
+	cWalker wk;
+	double xcod,ycod;
+	int iwk,next;
+	int ix,iy;
+	double tolx=dx[0]*1.001;
+	double toly=dx[1]*1.001;
+	for(iwk=0;iwk<nwk;iwk++){
+		wk=wks[iwk];
+		next=irnd(eng);	
+		if(wk.cl0->cnct4[next]!=-1){
+			wk.cl0=wk.cl0->cncl4[next];
+			ix=wk.cl0->ID/Ny;
+			iy=wk.cl0->ID%Ny;
+			xcod=Xa[0]+dx[0]*(ix+0.5);
+			ycod=Xa[1]+dx[1]*(iy+0.5);
+			if(xcod-wk.xn > tolx) wk.ofx--;
+			if(wk.xn-xcod > tolx) wk.ofx++;
+			if(ycod-wk.yn > toly) wk.ofy--;
+			if(wk.yn-ycod > toly) wk.ofy++;
+			wk.xn=xcod;
+			wk.yn=ycod;
+			wks[iwk]=wk;
+		}
+	};
+};
+double PoreCells::mean_u2(){
+	double u2=0.0,dux,duy;
+	cWalker wk;
+	for(int iwk=0; iwk<nwk; iwk++){
+		wk=wks[iwk];
+		dux=(wk.xn+wk.ofx*Wd[0]-wk.x0);
+		duy=(wk.yn+wk.ofy*Wd[1]-wk.y0);
+		u2+=(dux*dux+duy*duy);
+	};
+	return(u2/nwk);
+};
+void PoreCells::write_wks(char fname[128],int istp){
+	FILE *fp=fopen(fname,"w");
+	cWalker wk;
+	double xx,yy,ux,uy;
+	fprintf(fp,"# step= %d\n",istp);
+	for(int iwk=0; iwk<nwk; iwk++){
+		wk=wks[iwk];
+		xx=wk.xn+wk.ofx*Wd[0];
+		yy=wk.yn+wk.ofy*Wd[1];
+		ux=xx-wk.x0;
+		uy=yy-wk.y0;
+		fprintf(fp,"%lf %lf %lf %lf\n",xx,yy,ux,uy);
+	}
+};
+void PoreCells::mean_u(double *Ux, double *Uy){
+	double ux=0.0,uy=0.0;
+	double dux,duy;
+	cWalker wk;
+	for(int iwk=0; iwk<nwk; iwk++){
+		wk=wks[iwk];
+		dux=(wk.xn+wk.ofx*Wd[0]-wk.x0);
+		duy=(wk.yn+wk.ofy*Wd[1]-wk.y0);
+		ux+=dux;
+		uy+=duy;
+	};
+	*Ux=ux/nwk;
+	*Uy=uy/nwk;
 };
