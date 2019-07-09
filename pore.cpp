@@ -142,10 +142,12 @@ void PoreCells::setup(
 			*/
 
 			if(ngap==2){	// open throat model 
+				if(nin<2){
 				cells[iad].ID=isum;	// linear grid index 
 				cells[iad].iad=iad;	// data address in cells[iad];
 				cells[iad].bnd=true;
 				iad++;
+				}
 			}else if(nin==0){
 				//(nin_el<2){ // close throat model
 				cells[iad].ID=isum;	// linear grid index 

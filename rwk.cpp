@@ -28,6 +28,7 @@ int main(int argc, char *argv[]){
 	int nout,inc; 	// output times and step increment
 	char cbff[128];
 	FILE *fp;
+	int ngap;	// 0:close ,1:open thorat model
 
 	Solid sld;
 
@@ -50,6 +51,9 @@ int main(int argc, char *argv[]){
 	fgets(cbff,128,fp);
 	fscanf(fp,"%s\n",fu2b);
 
+	fgets(cbff,128,fp);
+	fscanf(fp,"%d\n",&ngap);
+	printf("ngap=%d\n",ngap);
 	fgets(cbff,128,fp);
 	fscanf(fp,"%d\n",&nwk);
 	fgets(cbff,128,fp);
@@ -122,15 +126,36 @@ int main(int argc, char *argv[]){
 			if(j>=gd.Ny) j-=gd.Ny;
 			iad=gd.find(i*gd.Ny+j);
 			if(iad==-1) puts("ERROR!!");
-			if(gd.NDs[l].sld && gd.NDs[iad].sld){
+
+			gd.NDs[l].cnds[k]=gd.NDs+iad;
+			nc++;
+			if(ngap==1) continue;	// open thorat model
+
+			if(gd.NDs[l].sld && gd.NDs[iad].sld){	//close thorat model
 				gd.NDs[l].cnct[k]=-1;
 				gd.NDs[l].cnds[k]=NULL;
-			}else{
-				gd.NDs[l].cnds[k]=gd.NDs+iad;
-				nc++;
+				nc--;
 			}
 		}
+		gd.NDs[l].nc=0;
+		for(k=0;k<4;k++){
+			if(gd.NDs[l].cnct[k]>=0) gd.NDs[l].nc++;
+		}
 	};
+
+	if(ngap==0){
+		for(l=0;l<ng;l++){
+		for(k=0;k<4;k++){
+			if(gd.NDs[l].cnct[k]>=0){
+			if(gd.NDs[l].cnds[k]->nc==1){
+			     	gd.NDs[l].cnct[k]=-1;
+			     	gd.NDs[l].cnds[k]=NULL;
+			}
+			}
+		}
+		}
+	};
+
 	printf("nc(mean)=%lf\n",nc/(float)ng);
 	//gd.dbg_connectivity();
 
