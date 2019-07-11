@@ -243,10 +243,11 @@ void PoreCells::isetup(
 
 		npr=QtreeGet_npr(&(tr0.qp0),xf,Lev_Max);	
 		ipore=false;
-		if(ngap==2){
-			if(npr >0) ipore=true;	// open throat approximation
-		}else{	 
-			if(npr == npr_max) ipore=true;	// close throat approximation
+		if(ngap==2){ // open throat approximation
+			if(npr >0) ipore=true;	
+		}else{	 // close throat approximation
+			//if(npr == npr_max) ipore=true;	
+			if(npr >= npr_max/2) ipore=true;	
 		}
 
 		if(ipore){
