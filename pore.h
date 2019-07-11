@@ -41,6 +41,7 @@ class PoreCells:public Tree4{
 		Cell *cells;	// pointer(array) to cell class instances
 		PoreCells();	// constructor
 		void setup(Ellip *els,int nelp,bool set_opr, int Lev_Max,Bbox bx); // generate cells 
+		void isetup(Ellip *els,int nelp,bool set_opr, int Lev_Max,int Lev_Exact,Bbox bx); // generate cells 
 		int find(int id);	// find cell having a given linear grid number(id).
 		void connect();	// establish neghboring cell connection 
 		void connect4();	// establish neghboring cell connection 

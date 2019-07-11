@@ -388,6 +388,43 @@ int QtreeFind(QPatch *qp, double xf[2]){
 	int iin=QtreeFind(qp->chld[icell],xf);
 	return(iin);
 };
+
+int QtreeSet_npr(QPatch *qp, bool ibnd){
+	int npr=0;
+	if(qp->chld[0]==NULL){
+		if(qp->isin()==2) npr=1;
+		if(qp->isin()==1 && ibnd) npr=1;
+		qp->npr=npr;
+		return(npr);
+	}
+
+	for(int k=0;k<4;k++) npr+=QtreeSet_npr(qp->chld[k],ibnd);
+	qp->npr=npr;
+	return(npr);
+};
+
+int QtreeGet_npr(QPatch *qp, double xf[2], int lev){
+
+	if(qp->chld[0]==NULL) return(qp->npr);
+	if(qp->lev==lev) return(qp->npr);
+
+	double *Xa=qp->px.Xa;
+	double *Wd=qp->px.Wd;
+	int icell,indx[2];
+
+	while(xf[0]-Xa[0]<0.0) xf[0]+=Wd[0];
+	while(xf[1]-Xa[1]<0.0) xf[1]+=Wd[1];
+	while(xf[0]-Xa[0]>Wd[0]) xf[0]-=Wd[0];
+	while(xf[1]-Xa[1]>Wd[0]) xf[1]-=Wd[1];
+
+	indx[0]=floor(2.*(xf[0]-Xa[0])/Wd[0]);
+	indx[1]=floor(2.*(xf[1]-Xa[1])/Wd[1]);
+	icell=indx[1]*2+indx[0];
+
+	int npr=QtreeGet_npr(qp->chld[icell],xf,lev);
+	return(npr);
+
+};
 int Qtree(QPatch *qp, Circ cr,int *count){
 
 	int i,j,k,l;

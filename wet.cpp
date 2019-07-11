@@ -85,17 +85,20 @@ int main(int argc, char *argv[]){
 	PoreCells Pcll,Pcllc;
 	Pcll.load_gmm(thE);	// set contact angle thE
 	Pcll.ngap=2;		// set inter-particle gap (1:close,2:open) 
-//	Pcll.ngap=3;		// set inter-particle gap (2:close,3:open) 
 	Pcll.qp0.refine[0]=true;// set parameter to refine pore space plus boundary
-	Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
+
+	int Lev_Exact=10;
+	Pcll.isetup(sld.els,sld.nelp,false,Lev,Lev_Exact,sld.bbox); // setup pore coverning regular cells 
+	//Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
 
 	Pcllc.load_gmm(thE);
-	Pcllc.ngap=1;
-//	Pcllc.ngap=2;
+	Pcllc.ngap=1;	// close thorat
 	Pcllc.qp0.refine[0]=true;
 	Pcllc.Sr=Sr;
-	Pcllc.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
+	//Pcllc.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
+	Pcllc.isetup(sld.els,sld.nelp,false,Lev,Lev_Exact,sld.bbox); // setup pore coverning regular cells 
 	Pcllc.connect(); // establish connection among pore coverning cells
+
 
 	Pcll.connect(); // establish connection among pore coverning cells
 	if(rstat==0){ //fresh start

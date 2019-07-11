@@ -160,6 +160,7 @@ class QPatch{
 		void set_lim(double xa[2], double xb[2]);
 		int isin();	// 0:interior, 1:boundary, 2:exterior, -1:error
 		void show_prms();
+		int npr;	//number of pore cells
 	private:
 	protected:
 };
@@ -172,6 +173,8 @@ int Qtree(QPatch *qp, Ellip el1, Ellip el2, bool isect, int *count, int lev_max)
 int Qtree(QPatch *qp, Ellip *els, int nelp, bool isect, int *count, int lev_max);
 int Qtree(QPatch *qp, Ellip *els, int nelp, bool isect, int *count, int lev_max, Bbox unit_cell);
 int QtreeFind(QPatch *qp, double xf[2]);
+int QtreeSet_npr(QPatch *qp, bool ibnd);
+int QtreeGet_npr(QPatch *qp, double xf[2], int lev);
 double area(Ellip el1, Ellip el2, int lev_max, bool isect);
 void clear_Qtree(QPatch *qp);
 void clear_Qtree2(QPatch *qp);

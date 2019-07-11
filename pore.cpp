@@ -196,6 +196,71 @@ void PoreCells::setup(
 	ncell=iad;
 	printf("iad=%d\n",iad);
 };
+void PoreCells::isetup(
+	Ellip *els,int nelp,	// ellipses
+	bool set_opr, 		// set operator true/false=union/intersection
+	int Lev_Max,		// level (cell)
+	int Lev_Exact,		// level (exact morphology)
+	Bbox bx			// bounding box
+){
+	Tree4::setup(els,nelp,set_opr,Lev_Max,bx); // generate quad tree to manage the domain
+	Tree4::set_grid_params(); // set regular grid parameters
+	Tree4::draw();
+
+	//QtreeSet_npr(&qp0,true);
+
+	Tree4 tr0;	// Exaxt Morphology
+	tr0.qp0.refine[0]=true;
+	tr0.setup(els,nelp,set_opr,Lev_Exact,bx);
+	tr0.set_grid_params();
+	QtreeSet_npr(&(tr0.qp0),true);
+	printf("npr_tot=%d\n",tr0.qp0.npr);
+
+
+	int i,j;
+	double xf[2];
+	ncell=0;
+	for(i=0;i<n_leaves;i++){
+	       	if(leaves[i].isin()>0) ncell++;	// count number of pore cells
+	};
+	printf("ncell(initial)=%d --> ",ncell);
+	cells=(Cell *)malloc(sizeof(Cell)*ncell); // allocate memory
+	for(i=0;i<ncell;i++){
+		cells[i].phs=0;	// all cells set to gas phase
+		cells[i].phs_bff=0;
+	};
+
+	int isum=0;
+	int iad=0;
+	int npr_max=pow(2,2*(Lev_Exact-Lev_Max));
+	int npr;
+	bool ipore;
+	//ngap=1:closed, 2: open 
+	for(i=0;i<Nx;i++){
+		xf[0]=Xa[0]+dx[0]*(i+0.5);
+	for(j=0;j<Ny;j++){
+		xf[1]=Xa[1]+dx[1]*(j+0.5);
+
+		npr=QtreeGet_npr(&(tr0.qp0),xf,Lev_Max);	
+		ipore=false;
+		if(ngap==2){
+			if(npr >0) ipore=true;	// open throat approximation
+		}else{	 
+			if(npr == npr_max) ipore=true;	// close throat approximation
+		}
+
+		if(ipore){
+			cells[iad].ID=isum;	// linear grid index 
+			cells[iad].iad=iad;	// data address in cells[iad];
+			iad++;
+		}
+
+		isum++;
+	}
+	}
+	ncell=iad;
+	printf("ncell(iad)=%d\n",iad);
+};
 void PoreCells::l2ij(int l, int *i, int *j){
 	(*i)=l/Ny;
 	(*j)=l%Ny;
