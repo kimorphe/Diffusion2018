@@ -89,6 +89,7 @@ int main(int argc, char *argv[]){
 
 	int Lev_Exact=10;
 	Pcll.isetup(sld.els,sld.nelp,false,Lev,Lev_Exact,sld.bbox); // setup pore coverning regular cells 
+	//Pcll.fwrite_cells("log_cell.dat");
 	//Pcll.setup(sld.els,sld.nelp,false,Lev,sld.bbox); // setup pore coverning regular cells 
 
 	Pcllc.load_gmm(thE);
@@ -104,6 +105,7 @@ int main(int argc, char *argv[]){
 	if(rstat==0){ //fresh start
 		Pcll.init(Sr);	// initialize phase distribution
 	}else{	// restart
+		//Pcll.fwrite_cells("error0.dat");
 		PoreCells pc0;
 		pc0.load_cell_data(f_rstat);
 		Pcll.Sr=pc0.Sr;
@@ -129,7 +131,7 @@ int main(int argc, char *argv[]){
 		i=0;
 		Evar=0.0;
 		nswap_sum=0;
-		printf("j=%d\n",j);
+		//printf("j=%d\n",j);
 		while(TH.cont_iteration){
 			TH.inc_Temp_exp();
 			dE=Pcll.MC_stepping(TH,&nswap,seed);

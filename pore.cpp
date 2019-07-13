@@ -246,8 +246,8 @@ void PoreCells::isetup(
 		if(ngap==2){ // open throat approximation
 			if(npr >0) ipore=true;	
 		}else{	 // close throat approximation
-			//if(npr == npr_max) ipore=true;	
-			if(npr >= npr_max/2) ipore=true;	
+			if(npr == npr_max) ipore=true;	
+			//if(npr >= npr_max/2) ipore=true;	
 		}
 
 		if(ipore){
@@ -369,6 +369,9 @@ int PoreCells::setup_phs_list(){
 	}
 	if((n_water+n_void-ncell)!=0){
 		printf("Erorr!! n_water+n_void !=ncell\n");
+		printf("ncell=%d,n_waetr=%d,n_void=%d\n",ncell,n_water,n_void);
+		printf("ncell-(n_w+n_v)=%d\n",ncell-n_water-n_void);
+		fwrite_cells("error.dat");
 		exit(-1);
 	};
 	indx_w=(int *)malloc(sizeof(int)*n_water);

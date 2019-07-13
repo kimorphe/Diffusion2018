@@ -32,6 +32,7 @@ class cWalker{
 		Cell *cl0;
 		double x0,y0;
 		double xn,yn;
+		int ix,iy;
 		int ofx,ofy;
 	private:
 };
