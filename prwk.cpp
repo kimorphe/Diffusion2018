@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<time.h>
 //#include<random>
 #include"set2d.h"
 #ifndef __TCNTRL__
@@ -69,11 +70,11 @@ int main(int argc, char *argv[]){
 	fclose(fp);
 //	----------------------------------
 	sld.load(fsld);	// import solid phase data
-
+	puts(fsld);
+	puts(fdat);
 
 	PoreCells Pcll;
 	Pcll.load_cell_data(fdat);
-
 	sld.bbox.setup(Pcll.Xa,Pcll.Wd); // set bounding box
 	Pcll.connect4();
 
@@ -84,18 +85,52 @@ int main(int argc, char *argv[]){
 	int j,iout=0;
 	char ftmp[128];
 	double uxb,uyb,u2b;
+	clock_t start,end,timeS,timeE;
+	timeS=clock();
+	start=clock();
+	int iwk,next;
+	int incx[4]={0,1,0,-1};
+	int incy[4]={-1,0,1,0};
+	cWalker *wks=Pcll.wks;
+	static std::mt19937_64 eng(-1);
+	std::uniform_int_distribution<int>irnd(0,3);
+	int nlap=100000,ilap=0;
+
+
 	for(j=0;j<Nt;j++){
 		if(j%inc==0){
 			sprintf(ftmp,"rwk%d.out",iout);
 			Pcll.write_wks(ftmp,j);
 			iout++;
 		}
-		Pcll.rwk(-1);
-		u2b=Pcll.mean_u2();
-		Pcll.mean_u(&uxb, &uyb);
+
+		if(j%nlap==0){
+			end=clock();
+			printf("%d: lap=%lf [sec/%d steps]\n",ilap,double(end-start)/CLOCKS_PER_SEC,nlap);
+			start=end;
+			ilap++;
+		}
+		//Pcll.rwk(-1);
+		//u2b=Pcll.mean_u2();
+		//Pcll.mean_u(&uxb, &uyb);
+		//Pcll.rwk2(-1);
+		//
+		for(iwk=0;iwk<nwk; iwk++){
+			next=irnd(eng);	
+			if(wks[iwk].cl0->cnct4[next]!=-1){
+				wks[iwk].cl0=wks[iwk].cl0->cncl4[next];
+				wks[iwk].ix+=incx[next];
+				wks[iwk].iy+=incy[next];
+			}
+		}
+
+		u2b=Pcll.mean_u2_new();
+		Pcll.mean_u_new(&uxb, &uyb);
 		fprintf(fu,"%lf %lf %lf\n", u2b,uxb,uyb);
 	};
 	Pcll.write_wks(fout,Nt-1);
+	timeE=clock();
+	printf("Total time %lf[sec/%d steps]\n",Nt,double(timeE-timeS)/CLOCKS_PER_SEC,nlap);
 
 	fclose(fu);
 

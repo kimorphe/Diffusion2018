@@ -353,7 +353,11 @@ void PoreCells::connect4(){
 			cells[ic].cnct4[k]=iad;
 
 			if(iad==-1) continue;
-			if(cells[iad].phs!=phs0) continue;
+			if(cells[iad].phs!=phs0){
+				cells[ic].cnct4[k]=-1;
+			       	continue;
+			}
+
 			cells[ic].cncl4[k]=cells+iad;
 			cells[ic].nc++;
 		}
@@ -890,7 +894,7 @@ void refine_PoreCell_data(	// copy phase data to a finner cell data
 
 void PoreCells::setup_walkers(int n, int seed){
 	nwk=n;
-	wks=(cWalker *)malloc(sizeof(Walker)*nwk);
+	wks=(cWalker *)malloc(sizeof(cWalker)*nwk);
 
 	std::mt19937_64 engine(seed);
 	std::uniform_real_distribution<double>MT01(0.0,1.0);
@@ -910,6 +914,11 @@ void PoreCells::setup_walkers(int n, int seed){
 		iy=cells[iad].ID%Ny;
 		x0=Xa[0]+(ix+0.5)*dx[0];
 		y0=Xa[1]+(iy+0.5)*dx[1];
+		wks[i].ix=ix;
+		wks[i].iy=iy;
+		wks[i].ix0=ix;
+		wks[i].iy0=iy;
+
 		wks[i].x0=x0;
 		wks[i].y0=y0;
 		wks[i].xn=x0;
@@ -917,6 +926,23 @@ void PoreCells::setup_walkers(int n, int seed){
 		i++;
 	};
 };
+void PoreCells::rwk2(int seed){
+	static std::mt19937_64 eng(seed);
+	std::uniform_int_distribution<int>irnd(0,3);
+	int incx[4]={0,1,0,-1};
+	int incy[4]={-1,0,1,0};
+	int iwk,next;
+
+	for(iwk=0;iwk<nwk; iwk++){
+		next=irnd(eng);	
+		if(wks[iwk].cl0->cnct4[next]!=-1){
+			wks[iwk].cl0=wks[iwk].cl0->cncl4[next];
+			wks[iwk].ix+=incx[next];
+			wks[iwk].iy+=incy[next];
+		};
+	}
+};
+
 void PoreCells::rwk(int seed){
 	static std::mt19937_64 eng(seed);
 	std::uniform_int_distribution<int>irnd(0,3);
@@ -946,6 +972,47 @@ void PoreCells::rwk(int seed){
 		}
 	};
 };
+//------------------------------------------------------
+double PoreCells::mean_u2_new(){
+	double u2=0.0,dux,duy;
+	cWalker wk;
+	for(int iwk=0; iwk<nwk; iwk++){
+		wk=wks[iwk];
+		dux=(wk.ix-wk.ix0)*dx[0];
+		duy=(wk.iy-wk.iy0)*dx[1];
+		u2+=(dux*dux+duy*duy);
+	};
+	return(u2/nwk);
+};
+void PoreCells::write_wks_new(char fname[128],int istp){
+	FILE *fp=fopen(fname,"w");
+	cWalker wk;
+	double xx,yy,ux,uy;
+	fprintf(fp,"# step= %d\n",istp);
+	for(int iwk=0; iwk<nwk; iwk++){
+		wk=wks[iwk];
+		xx=(wk.ix+0.5)*dx[0]+Xa[0];
+		yy=(wk.iy+0.5)*dx[1]+Xa[1];
+		ux=(wk.ix-wk.ix0)*dx[0];
+		uy=(wk.iy-wk.iy0)*dx[1];
+		fprintf(fp,"%lf %lf %lf %lf\n",xx,yy,ux,uy);
+	}
+};
+void PoreCells::mean_u_new(double *Ux, double *Uy){
+	double ux=0.0,uy=0.0;
+	double dux,duy;
+	cWalker wk;
+	for(int iwk=0; iwk<nwk; iwk++){
+		wk=wks[iwk];
+		dux=(wk.ix-wk.ix0)*dx[0];
+		duy=(wk.iy-wk.iy0)*dx[1];
+		ux+=dux;
+		uy+=duy;
+	};
+	*Ux=ux/nwk;
+	*Uy=uy/nwk;
+};
+//------------------------------------------------------
 double PoreCells::mean_u2(){
 	double u2=0.0,dux,duy;
 	cWalker wk;

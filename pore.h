@@ -33,6 +33,7 @@ class cWalker{
 		double x0,y0;
 		double xn,yn;
 		int ix,iy;
+		int ix0,iy0;
 		int ofx,ofy;
 	private:
 };
@@ -80,6 +81,10 @@ class PoreCells:public Tree4{
 		double mean_u2();
 		void mean_u(double *ux, double *uy);
 		void write_wks(char fname[128],int istp);
+		void rwk2(int seed);
+		double mean_u2_new();
+		void mean_u_new(double *ux, double *uy);
+		void write_wks_new(char fname[128],int istp);
 	private:
 };
 void copy_PoreCell_data(PoreCells *pc_From, PoreCells *pc_To);
