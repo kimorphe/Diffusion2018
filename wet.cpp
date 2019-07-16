@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<time.h>
 #include"set2d.h"
 #ifndef __TCNTRL__
 	#define __TCNTRL__
@@ -80,6 +81,10 @@ int main(int argc, char *argv[]){
 	sld.load(fsld);	// import solid phase data
 	sld.bbox.setup(Xa,Wd); // set bounding box
 
+	clock_t tstart,tend; 
+
+	tstart=clock();
+
 	char ftmp[128]="pore_initial.dat";
 	double Etot0,Etot;
 	PoreCells Pcll,Pcllc;
@@ -125,6 +130,7 @@ int main(int argc, char *argv[]){
 	double dE,Evar;
 	double alph=0.05;
 
+
 	Etot0=Pcll.total_energy();
 	printf("Total energy=%lf\n",Etot0);
 	for(j=0;j<jmax;j++){
@@ -156,6 +162,9 @@ int main(int argc, char *argv[]){
 	copy_PoreCell_data(&Pcll,&Pcllc);
 	//sprintf(fout,"pore_c.dat");
 	Pcllc.fwrite_cells(foutc);
+	tend=clock();
+
+	printf("Elapsed time= %lf[sec]\n ",double(tend-tstart)/CLOCKS_PER_SEC);
 
 	return(0);
 };

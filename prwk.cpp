@@ -100,7 +100,7 @@ int main(int argc, char *argv[]){
 	for(j=0;j<Nt;j++){
 		if(j%inc==0){
 			sprintf(ftmp,"rwk%d.out",iout);
-			Pcll.write_wks(ftmp,j);
+			Pcll.write_wks_new(ftmp,j);
 			iout++;
 		}
 
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]){
 		Pcll.mean_u_new(&uxb, &uyb);
 		fprintf(fu,"%lf %lf %lf\n", u2b,uxb,uyb);
 	};
-	Pcll.write_wks(fout,Nt-1);
+	Pcll.write_wks_new(fout,Nt-1);
 	timeE=clock();
 	printf("Total time %lf[sec/%d steps]\n",Nt,double(timeE-timeS)/CLOCKS_PER_SEC,nlap);
 
